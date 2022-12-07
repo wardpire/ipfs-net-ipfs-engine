@@ -12,7 +12,7 @@ namespace Ipfs.Engine.LinkedData
     ///   Linked data as a protobuf message.
     /// </summary>
     /// <remarks>
-    ///   This is the original legacy format used by the IPFS <see cref="DagNode"/>. 
+    ///   This is the original legacy format used by the IPFS <see cref="DagNode"/>.
     /// </remarks>
     public class ProtobufFormat : ILinkedDataFormat
     {
@@ -43,7 +43,8 @@ namespace Ipfs.Engine.LinkedData
                 .Select(link => new DagLink(
                     link["Name"].AsString(),
                     Cid.Decode(link["Cid"]["/"].AsString()),
-                    link["Size"].AsInt64()));
+                    link["Size"].ToObject<long>()));
+
             var node = new DagNode(data["data"].GetByteString(), links);
             using (var ms = new MemoryStream())
             {

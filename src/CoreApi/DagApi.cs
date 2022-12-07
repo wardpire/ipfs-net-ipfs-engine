@@ -13,14 +13,11 @@ using PeterO.Cbor;
 
 namespace Ipfs.Engine.CoreApi
 {
-    class DagApi : IDagApi
+    internal class DagApi : IDagApi
     {
-        static readonly PODOptions podOptions = new PODOptions
-        (
-            removeIsPrefix: false,
-            useCamelCase: false
-        );
-        IpfsEngine ipfs;
+        private static readonly PODOptions podOptions = new("usecamelcase=false");
+
+        private IpfsEngine ipfs;
 
         public DagApi(IpfsEngine ipfs)
         {
@@ -40,7 +37,7 @@ namespace Ipfs.Engine.CoreApi
             {
                 canonical.WriteJSONTo(ms);
                 ms.Position = 0;
-                return (JObject) JObject.ReadFrom(reader);
+                return (JObject)JObject.ReadFrom(reader);
             }
         }
 
@@ -69,7 +66,7 @@ namespace Ipfs.Engine.CoreApi
         }
 
         public async Task<T> GetAsync<T>(
-            Cid id, 
+            Cid id,
             CancellationToken cancel = default(CancellationToken))
         {
             var block = await ipfs.Block.GetAsync(id, cancel).ConfigureAwait(false);
@@ -109,7 +106,7 @@ namespace Ipfs.Engine.CoreApi
             string contentType = "dag-cbor",
             string multiHash = MultiHash.DefaultAlgorithmName,
             string encoding = MultiBase.DefaultAlgorithmName,
-            bool pin = true, 
+            bool pin = true,
             CancellationToken cancel = default(CancellationToken))
         {
             var format = GetDataFormat(contentType);
@@ -129,7 +126,7 @@ namespace Ipfs.Engine.CoreApi
             return await ipfs.Block.PutAsync(block, contentType, multiHash, encoding, pin, cancel).ConfigureAwait(false);
         }
 
-        ILinkedDataFormat GetDataFormat(Cid id)
+        private ILinkedDataFormat GetDataFormat(Cid id)
         {
             if (IpldRegistry.Formats.TryGetValue(id.ContentType, out ILinkedDataFormat format))
                 return format;
@@ -137,7 +134,7 @@ namespace Ipfs.Engine.CoreApi
             throw new KeyNotFoundException($"Unknown IPLD format '{id.ContentType}'.");
         }
 
-        ILinkedDataFormat GetDataFormat(string contentType)
+        private ILinkedDataFormat GetDataFormat(string contentType)
         {
             if (IpldRegistry.Formats.TryGetValue(contentType, out ILinkedDataFormat format))
                 return format;

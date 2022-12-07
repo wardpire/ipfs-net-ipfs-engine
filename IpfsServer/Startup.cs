@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Ipfs.CoreApi;
-using Ipfs.Engine;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.OpenApi.Models;
+using Ipfs.CoreApi;
+using Ipfs.Engine;
 using Newtonsoft.Json.Serialization;
 using Swashbuckle.AspNetCore.Swagger;
 
@@ -17,9 +19,8 @@ namespace Ipfs.Server
     /// <summary>
     ///   Startup steps.
     /// </summary>
-    class Startup
+    internal class Startup
     {
-
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -35,20 +36,21 @@ namespace Ipfs.Server
             services.AddMvc()
                 .AddJsonOptions(jo =>
                 {
-                    jo.SerializerSettings.ContractResolver = new DefaultContractResolver()
-                    {
-                        NamingStrategy = new DefaultNamingStrategy()
-                    };
-                })
-                ;
+                    //jo.SerializerSettings.ContractResolver = new DefaultContractResolver()
+                    //{
+                    //    NamingStrategy = new DefaultNamingStrategy()
+                    //};
+                });
 
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v0", new Info {
+                c.SwaggerDoc("v0", new OpenApiInfo
+                {
                     Title = "IPFS HTTP API",
-                    Description = "The API for interacting with IPFS nodes.",  
-                    Version = "v0" });
+                    Description = "The API for interacting with IPFS nodes.",
+                    Version = "v0"
+                });
 
                 var path = System.Reflection.Assembly.GetExecutingAssembly().Location;
                 path = Path.ChangeExtension(path, ".xml");
@@ -57,7 +59,7 @@ namespace Ipfs.Server
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
             {
@@ -68,17 +70,17 @@ namespace Ipfs.Server
                 app.UseExceptionHandler("/Error");
             }
             app.UseCors(c => c
-                .AllowAnyOrigin() // TODO: This is NOT SAFE
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .WithExposedHeaders("X-Stream-Output", "X-Chunked-Output", "X-Content-Length")
-            );
+               .AllowAnyOrigin() // TODO: This is NOT SAFE
+               .AllowAnyHeader()
+               .AllowAnyMethod()
+               .WithExposedHeaders("X-Stream-Output", "X-Chunked-Output", "X-Content-Length")
+                       );
             app.UseStaticFiles();
 
             // Enable middleware to serve generated Swagger as a JSON endpoint.
             app.UseSwagger();
 
-            // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), 
+            // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.),
             // specifying the Swagger JSON endpoint.
             app.UseSwaggerUI(c =>
             {

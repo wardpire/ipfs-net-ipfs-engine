@@ -1,24 +1,24 @@
-﻿using ICSharpCode.SharpZipLib.Tar;
-using Common.Logging;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Common.Logging;
+using ICSharpCode.SharpZipLib.Tar;
 using Ipfs.CoreApi;
 using Ipfs.Engine.UnixFileSystem;
 using ProtoBuf;
-using System.Linq;
 
 namespace Ipfs.Engine.CoreApi
 {
-    class FileSystemApi : IFileSystemApi
+    internal class FileSystemApi : IFileSystemApi
     {
-        static ILog log = LogManager.GetLogger(typeof(FileSystemApi));
-        IpfsEngine ipfs;
+        private static ILog log = LogManager.GetLogger(typeof(FileSystemApi));
+        private IpfsEngine ipfs;
 
-        static readonly int DefaultLinksPerBlock = 174;
+        private static readonly int DefaultLinksPerBlock = 174;
 
         public FileSystemApi(IpfsEngine ipfs)
         {
@@ -26,7 +26,7 @@ namespace Ipfs.Engine.CoreApi
         }
 
         public async Task<IFileSystemNode> AddFileAsync(
-            string path, 
+            string path,
             AddFileOptions options = default(AddFileOptions),
             CancellationToken cancel = default(CancellationToken))
         {
@@ -48,9 +48,9 @@ namespace Ipfs.Engine.CoreApi
         }
 
         public async Task<IFileSystemNode> AddAsync(
-            Stream stream, 
-            string name, 
-            AddFileOptions options, 
+            Stream stream,
+            string name,
+            AddFileOptions options,
             CancellationToken cancel)
         {
             options = options ?? new AddFileOptions();
@@ -89,7 +89,7 @@ namespace Ipfs.Engine.CoreApi
             return node;
         }
 
-        async Task<FileSystemNode> BuildTreeAsync(
+        private async Task<FileSystemNode> BuildTreeAsync(
             IEnumerable<FileSystemNode> nodes,
             AddFileOptions options,
             CancellationToken cancel)
@@ -116,7 +116,7 @@ namespace Ipfs.Engine.CoreApi
             return await BuildTreeAsync(tree, options, cancel);
         }
 
-        async Task<FileSystemNode> BuildTreeNodeAsync(
+        private async Task<FileSystemNode> BuildTreeNodeAsync(
             IEnumerable<FileSystemNode> nodes,
             AddFileOptions options,
             CancellationToken cancel)
@@ -155,8 +155,8 @@ namespace Ipfs.Engine.CoreApi
         }
 
         public async Task<IFileSystemNode> AddDirectoryAsync(
-            string path, 
-            bool recursive = true, 
+            string path,
+            bool recursive = true,
             AddFileOptions options = default(AddFileOptions),
             CancellationToken cancel = default(CancellationToken))
         {
@@ -188,7 +188,7 @@ namespace Ipfs.Engine.CoreApi
             return fsn;
         }
 
-        async Task<FileSystemNode> CreateDirectoryAsync (IEnumerable<IFileSystemLink> links, AddFileOptions options, CancellationToken cancel)
+        private async Task<FileSystemNode> CreateDirectoryAsync(IEnumerable<IFileSystemLink> links, AddFileOptions options, CancellationToken cancel)
         {
             var dm = new DataMessage { Type = DataType.Directory };
             var pb = new MemoryStream();
@@ -259,7 +259,6 @@ namespace Ipfs.Engine.CoreApi
                 Size = (long)(dm.FileSize ?? 0)
             };
 
-
             return fsn;
         }
 
@@ -289,7 +288,7 @@ namespace Ipfs.Engine.CoreApi
         {
             var cid = await ipfs.ResolveIpfsPathToCidAsync(path, cancel).ConfigureAwait(false);
             var ms = new MemoryStream();
-            using (var tarStream = new TarOutputStream(ms, 1))
+            using (var tarStream = new TarOutputStream(ms, 1, Encoding.Default))
             using (var archive = TarArchive.CreateOutputTarArchive(tarStream))
             {
                 archive.IsStreamOwner = false;
@@ -299,7 +298,7 @@ namespace Ipfs.Engine.CoreApi
             return ms;
         }
 
-        async Task AddTarNodeAsync(Cid cid, string name, TarOutputStream tar, CancellationToken cancel)
+        private async Task AddTarNodeAsync(Cid cid, string name, TarOutputStream tar, CancellationToken cancel)
         {
             var block = await ipfs.Block.GetAsync(cid, cancel).ConfigureAwait(false);
             var dm = new DataMessage { Type = DataType.Raw };
@@ -351,8 +350,7 @@ namespace Ipfs.Engine.CoreApi
             }
         }
 
-
-        IBlockApi GetBlockService(AddFileOptions options)
+        private IBlockApi GetBlockService(AddFileOptions options)
         {
             return options.OnlyHash
                 ? new HashOnlyBlockService()
@@ -362,7 +360,7 @@ namespace Ipfs.Engine.CoreApi
         /// <summary>
         ///   A Block service that only computes the block's hash.
         /// </summary>
-        class HashOnlyBlockService : IBlockApi
+        private class HashOnlyBlockService : IBlockApi
         {
             public Task<IDataBlock> GetAsync(Cid id, CancellationToken cancel = default(CancellationToken))
             {
@@ -370,11 +368,11 @@ namespace Ipfs.Engine.CoreApi
             }
 
             public Task<Cid> PutAsync(
-                byte[] data, 
-                string contentType = Cid.DefaultContentType, 
+                byte[] data,
+                string contentType = Cid.DefaultContentType,
                 string multiHash = MultiHash.DefaultAlgorithmName,
                 string encoding = MultiBase.DefaultAlgorithmName,
-                bool pin = false, 
+                bool pin = false,
                 CancellationToken cancel = default(CancellationToken))
             {
                 var cid = new Cid
@@ -392,7 +390,7 @@ namespace Ipfs.Engine.CoreApi
                 string contentType = Cid.DefaultContentType,
                 string multiHash = MultiHash.DefaultAlgorithmName,
                 string encoding = MultiBase.DefaultAlgorithmName,
-                bool pin = false, 
+                bool pin = false,
                 CancellationToken cancel = default(CancellationToken))
             {
                 throw new NotImplementedException();

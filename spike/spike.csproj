@@ -2,13 +2,34 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+	  <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Common.Logging" Version="3.4.1" />
   </ItemGroup>
 
+	<ItemGroup>
+		<Reference Include="Ipfs.Core">
+			<HintPath>..\..\net-ipfs-core\src\bin\Release\net6.0\Ipfs.Core.dll</HintPath>
+		</Reference>
+		<Reference Include="Makaretu.Dns">
+			<HintPath>..\..\net-dns\src\bin\Release\net6.0\Makaretu.Dns.dll</HintPath>
+		</Reference>
+		<Reference Include="Makaretu.Dns.Multicast">
+			<HintPath>..\..\net-mdns\src\bin\Release\net6.0\Makaretu.Dns.Multicast.dll</HintPath>
+		</Reference>
+		<Reference Include="Makaretu.Dns.Unicast">
+			<HintPath>..\..\net-udns\src\bin\Release\net6.0\Makaretu.Dns.Unicast.dll</HintPath>
+		</Reference>
+		<Reference Include="Makaretu.KBucket">
+			<HintPath>..\..\k-bucket\src\bin\Release\net6.0\Makaretu.KBucket.dll</HintPath>
+		</Reference>
+		<Reference Include="PeerTalk">
+			<HintPath>..\..\peer-talk\src\bin\Release\net6.0\PeerTalk.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+	
   <ItemGroup>
     <ProjectReference Include="..\src\IpfsEngine.csproj" />
     <ProjectReference Include="..\test\IpfsEngineTests.csproj" />

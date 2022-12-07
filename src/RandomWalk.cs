@@ -19,8 +19,8 @@ namespace Ipfs.Engine
     /// </remarks>
     public class RandomWalk : IService
     {
-        static ILog log = LogManager.GetLogger(typeof(RandomWalk));
-        CancellationTokenSource cancel;
+        private static ILog log = LogManager.GetLogger(typeof(RandomWalk));
+        private CancellationTokenSource cancel;
 
         /// <summary>
         ///   The Distributed Hash Table to query.
@@ -75,7 +75,7 @@ namespace Ipfs.Engine
         /// <summary>
         ///   The background process.
         /// </summary>
-        async Task RunnerAsync(CancellationToken cancellation)
+        private async Task RunnerAsync(CancellationToken cancellation)
         {
             while (!cancellation.IsCancellationRequested)
             {
@@ -102,7 +102,7 @@ namespace Ipfs.Engine
             }
         }
 
-        async Task RunQueryAsync(CancellationToken cancel = default(CancellationToken))
+        private async Task RunQueryAsync(CancellationToken cancel = default(CancellationToken))
         {
             // Tests may not set a DHT.
             if (Dht == null)
@@ -113,12 +113,11 @@ namespace Ipfs.Engine
 
             // Get a random peer id.
             var x = new byte[32];
-            var rng = new Random();
+            var rng = new Random(Environment.TickCount);
             rng.NextBytes(x);
             var id = MultiHash.ComputeHash(x);
 
             await Dht.FindPeerAsync(id, cancel).ConfigureAwait(false);
         }
-
     }
 }

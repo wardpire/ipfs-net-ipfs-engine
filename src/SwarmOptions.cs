@@ -46,6 +46,5 @@ namespace Ipfs.Engine
         ///   </para>
         /// </remarks>
         public int MinConnections { get; set; } = 8;
-
     }
 }

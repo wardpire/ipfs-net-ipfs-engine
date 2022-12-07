@@ -1,12 +1,12 @@
-﻿using Newtonsoft.Json;
-using Nito.AsyncEx;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Nito.AsyncEx;
 
 namespace Ipfs.Engine
 {
@@ -47,7 +47,7 @@ namespace Ipfs.Engine
             };
 
         /// <summary>
-        ///  A function to read the JSON encoded entity from the stream. 
+        ///  A function to read the JSON encoded entity from the stream.
         /// </summary>
         /// <remarks>
         ///   This is the default <see cref="Deserialize"/>.
@@ -92,7 +92,7 @@ namespace Ipfs.Engine
         ///   Defaults to using <see cref="JsonSerialize"/>.
         /// </value>
         public Func<Stream, TName, TValue, CancellationToken, Task> Serialize
-            { get; set; } = JsonSerialize;
+        { get; set; } = JsonSerialize;
 
         /// <summary>
         ///   Retrieves the value from the stream.
@@ -101,7 +101,7 @@ namespace Ipfs.Engine
         ///   Defaults to using <see cref="JsonDeserialize"/>
         /// </value>
         public Func<Stream, TName, CancellationToken, Task<TValue>> Deserialize
-            { get; set; } = JsonDeserialize;
+        { get; set; } = JsonDeserialize;
 
         /// <summary>
         ///   Try to get the value with the specified name.
@@ -195,10 +195,10 @@ namespace Ipfs.Engine
                 {
                     try
                     {
-                        stream.Dispose();
+                        await stream.DisposeAsync();
                         File.Delete(path);
                     }
-                    catch (Exception)
+                    catch
                     {
                         // eat it.
                     }
@@ -332,6 +332,5 @@ namespace Ipfs.Engine
         {
             return Path.Combine(Folder, NameToKey(name));
         }
-
     }
 }

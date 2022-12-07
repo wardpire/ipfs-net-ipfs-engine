@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2027
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32804.467
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6B9AA9C7-5E90-4D10-9DDE-A2AA5FE3ECA6}"
 	ProjectSection(SolutionItems) = preProject
@@ -19,8 +19,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IpfsEngine", "src\IpfsEngine.csproj", "{F3C81C57-C283-4E07-B765-DEABCFB22136}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IpfsEngineTests", "test\IpfsEngineTests.csproj", "{B459FBC7-4A28-4170-AD83-7348A403407F}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IpfsCli", "IpfsCli\IpfsCli.csproj", "{ED6D22AF-BF96-4413-8DD7-1528EED80CAC}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IpfsServer", "IpfsServer\IpfsServer.csproj", "{F2907B2C-CFFF-4E05-8E2C-A067FEC17F77}"
 EndProject
@@ -42,10 +40,6 @@ Global
 		{B459FBC7-4A28-4170-AD83-7348A403407F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B459FBC7-4A28-4170-AD83-7348A403407F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B459FBC7-4A28-4170-AD83-7348A403407F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{ED6D22AF-BF96-4413-8DD7-1528EED80CAC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{ED6D22AF-BF96-4413-8DD7-1528EED80CAC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{ED6D22AF-BF96-4413-8DD7-1528EED80CAC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{ED6D22AF-BF96-4413-8DD7-1528EED80CAC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F2907B2C-CFFF-4E05-8E2C-A067FEC17F77}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F2907B2C-CFFF-4E05-8E2C-A067FEC17F77}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F2907B2C-CFFF-4E05-8E2C-A067FEC17F77}.Release|Any CPU.ActiveCfg = Release|Any CPU

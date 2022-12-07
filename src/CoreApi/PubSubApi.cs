@@ -8,9 +8,9 @@ using Ipfs.CoreApi;
 
 namespace Ipfs.Engine.CoreApi
 {
-    class PubSubApi : IPubSubApi
+    internal class PubSubApi : IPubSubApi
     {
-        IpfsEngine ipfs;
+        private IpfsEngine ipfs;
 
         public PubSubApi(IpfsEngine ipfs)
         {
