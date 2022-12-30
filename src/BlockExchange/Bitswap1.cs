@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 namespace Ipfs.Engine.BlockExchange
 {
     /// <summary>
-    ///   Bitswap Protocol version 1.0.0 
+    ///   Bitswap Protocol version 1.0.0
     /// </summary>
     public class Bitswap1 : IBitswapProtocol
     {
@@ -41,7 +41,7 @@ namespace Ipfs.Engine.BlockExchange
         public Bitswap Bitswap { get; set; }
 
         /// <inheritdoc />
-        public async Task ProcessMessageAsync(PeerConnection connection, Stream stream, CancellationToken cancel = default(CancellationToken))
+        public async Task ProcessMessageAsync(PeerConnection connection, Stream stream, CancellationToken cancel = default)
         {
             var request = await ProtoBufHelper.ReadMessageAsync<Message>(stream, cancel).ConfigureAwait(false);
 
@@ -119,7 +119,7 @@ namespace Ipfs.Engine.BlockExchange
             Stream stream,
             IEnumerable<WantedBlock> wants,
             bool full = true,
-            CancellationToken cancel = default(CancellationToken)
+            CancellationToken cancel = default
             )
         {
             log.Debug("Sending want list");
@@ -145,7 +145,7 @@ namespace Ipfs.Engine.BlockExchange
         internal async Task SendAsync(
             Stream stream,
             IDataBlock block,
-            CancellationToken cancel = default(CancellationToken)
+            CancellationToken cancel = default
             )
         {
             log.Debug($"Sending block {block.Id}");
@@ -195,6 +195,5 @@ namespace Ipfs.Engine.BlockExchange
             [ProtoMember(2)]
             public byte[][] blocks;
         }
-
     }
 }

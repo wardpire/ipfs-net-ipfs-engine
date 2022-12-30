@@ -64,7 +64,7 @@ namespace Ipfs.Engine.CoreApi
                         Folder = folder,
                         NameToKey = (cid) => cid.Hash.ToBase32(),
                         KeyToName = (key) => new MultiHash(key.FromBase32()),
-                        Serialize = async (stream, cid, block, cancel) => 
+                        Serialize = async (stream, cid, block, cancel) =>
                         {
                             await stream.WriteAsync(block.DataBytes, 0, block.DataBytes.Length, cancel).ConfigureAwait(false);
                         },
@@ -88,8 +88,7 @@ namespace Ipfs.Engine.CoreApi
             }
         }
 
-
-        public async Task<IDataBlock> GetAsync(Cid id, CancellationToken cancel = default(CancellationToken))
+        public async Task<IDataBlock> GetAsync(Cid id, CancellationToken cancel = default)
         {
             // Hack for empty object and empty directory object
             if (id == emptyDirectory.Id)
@@ -161,7 +160,7 @@ namespace Ipfs.Engine.CoreApi
             string multiHash = MultiHash.DefaultAlgorithmName,
             string encoding = MultiBase.DefaultAlgorithmName,
             bool pin = false,
-            CancellationToken cancel = default(CancellationToken))
+            CancellationToken cancel = default)
         {
             if (data.Length > ipfs.Options.Block.MaxBlockSize)
             {
@@ -231,7 +230,7 @@ namespace Ipfs.Engine.CoreApi
             string multiHash = MultiHash.DefaultAlgorithmName,
             string encoding = MultiBase.DefaultAlgorithmName,
             bool pin = false,
-            CancellationToken cancel = default(CancellationToken))
+            CancellationToken cancel = default)
         {
             using (var ms = new MemoryStream())
             {
@@ -240,7 +239,7 @@ namespace Ipfs.Engine.CoreApi
             }
         }
 
-        public async Task<Cid> RemoveAsync(Cid id, bool ignoreNonexistent = false, CancellationToken cancel = default(CancellationToken))
+        public async Task<Cid> RemoveAsync(Cid id, bool ignoreNonexistent = false, CancellationToken cancel = default)
         {
             if (id.Hash.IsIdentityHash)
             {
@@ -256,7 +255,7 @@ namespace Ipfs.Engine.CoreApi
             throw new KeyNotFoundException($"Block '{id.Encode()}' does not exist.");
         }
 
-        public async Task<IDataBlock> StatAsync(Cid id, CancellationToken cancel = default(CancellationToken))
+        public async Task<IDataBlock> StatAsync(Cid id, CancellationToken cancel = default)
         {
             if (id.Hash.IsIdentityHash)
             {

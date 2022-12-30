@@ -32,6 +32,5 @@ namespace Ipfs.Engine.Cryptography
                 Array.Clear(plain, 0, length);
             }
         }
-
     }
 }

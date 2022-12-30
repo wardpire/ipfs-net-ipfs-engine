@@ -28,8 +28,8 @@ namespace Ipfs.Engine.Cryptography
         /// <param name="cancel"></param>
         /// <returns></returns>
         public async Task<byte[]> CreateCertificateAsync(
-            string keyName, 
-            CancellationToken cancel = default(CancellationToken))
+            string keyName,
+            CancellationToken cancel = default)
         {
             var cert = await CreateBCCertificateAsync(keyName, cancel).ConfigureAwait(false);
             return cert.GetEncoded();
@@ -45,7 +45,7 @@ namespace Ipfs.Engine.Cryptography
         /// <returns></returns>
         public async Task<X509Certificate> CreateBCCertificateAsync(
             string keyName,
-            CancellationToken cancel = default(CancellationToken))
+            CancellationToken cancel = default)
         {
             // Get the BC key pair for the named key.
             var ekey = await Store.TryGetAsync(keyName, cancel).ConfigureAwait(false);
@@ -58,7 +58,7 @@ namespace Ipfs.Engine.Cryptography
             });
 
             // A signer for the key.
-            var ku = new KeyUsage(KeyUsage.DigitalSignature 
+            var ku = new KeyUsage(KeyUsage.DigitalSignature
                 | KeyUsage.DataEncipherment
                 | KeyUsage.KeyEncipherment);
             ISignatureFactory signatureFactory = null;
@@ -106,6 +106,5 @@ namespace Ipfs.Engine.Cryptography
 
             return certGenerator.Generate(signatureFactory);
         }
-
     }
 }

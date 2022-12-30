@@ -23,7 +23,7 @@ namespace Ipfs.Engine.UnixFileSystem
             this.offset = offset;
 
             stream.Position = offset;
-            logicalEnd = count < 1 
+            logicalEnd = count < 1
                 ? stream.Length
                 : Math.Min(stream.Length, offset + count);
         }

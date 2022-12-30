@@ -24,20 +24,20 @@ using PeerTalk.Cryptography;
 namespace Ipfs.Engine
 {
     /// <summary>
-    ///   Implements the <see cref="Ipfs.CoreApi.ICoreApi">Core API</see> which makes it possible to create a decentralised and distributed 
+    ///   Implements the <see cref="Ipfs.CoreApi.ICoreApi">Core API</see> which makes it possible to create a decentralised and distributed
     ///   application without relying on an "IPFS daemon".
     /// </summary>
     /// <remarks>
-    ///   The engine should be used as a shared object in your program. It is thread safe (re-entrant) and conserves 
+    ///   The engine should be used as a shared object in your program. It is thread safe (re-entrant) and conserves
     ///   resources when only one instance is used.
     /// </remarks>
     public partial class IpfsEngine : ICoreApi, IService, IDisposable
     {
-        static ILog log = LogManager.GetLogger(typeof(IpfsEngine));
+        private static ILog log = LogManager.GetLogger(typeof(IpfsEngine));
 
-        KeyChain keyChain;
-        SecureString passphrase;
-        ConcurrentBag<Func<Task>> stopTasks = new ConcurrentBag<Func<Task>>();
+        private KeyChain keyChain;
+        private SecureString passphrase;
+        private ConcurrentBag<Func<Task>> stopTasks = new ConcurrentBag<Func<Task>>();
 
         /// <summary>
         ///   Creates a new instance of the <see cref="IpfsEngine"/> class
@@ -68,7 +68,7 @@ namespace Ipfs.Engine
         ///   The password used to access the keychain.
         /// </param>
         /// <remarks>
-        ///   A <b>SecureString</b> copy of the passphrase is made so that the array can be 
+        ///   A <b>SecureString</b> copy of the passphrase is made so that the array can be
         ///   zeroed out after the call.
         /// </remarks>
         public IpfsEngine(char[] passphrase)
@@ -97,8 +97,8 @@ namespace Ipfs.Engine
             Init();
         }
 
-        void Init()
-        { 
+        private void Init()
+        {
             // Init the core api inteface.
             Bitswap = new BitswapApi(this);
             Block = new BlockApi(this);
@@ -289,12 +289,12 @@ namespace Ipfs.Engine
         ///   A task that represents the asynchronous operation. The task's result is
         ///   the <see cref="KeyChain"/>.
         /// </returns>
-        public async Task<KeyChain> KeyChainAsync(CancellationToken cancel = default(CancellationToken))
+        public async Task<KeyChain> KeyChainAsync(CancellationToken cancel = default)
         {
             // TODO: this should be a LazyAsync property.
             if (keyChain == null)
             {
-                lock (this)
+                lock (_lockObject)
                 {
                     if (keyChain == null)
                     {
@@ -302,11 +302,11 @@ namespace Ipfs.Engine
                         {
                             Options = Options.KeyChain
                         };
-                     }
+                    }
                 }
 
                 await keyChain.SetPassphraseAsync(passphrase, cancel).ConfigureAwait(false);
-                
+
                 // Maybe create "self" key, this is the local peer's id.
                 var self = await keyChain.FindKeyByNameAsync("self", cancel).ConfigureAwait(false);
                 if (self == null)
@@ -341,7 +341,7 @@ namespace Ipfs.Engine
         /// <exception cref="ArgumentException">
         ///   The <paramref name="path"/> cannot be resolved.
         /// </exception>
-        public async Task<Cid> ResolveIpfsPathToCidAsync (string path, CancellationToken cancel = default(CancellationToken))
+        public async Task<Cid> ResolveIpfsPathToCidAsync(string path, CancellationToken cancel = default)
         {
             var r = await Generic.ResolveAsync(path, true, cancel).ConfigureAwait(false);
             return Cid.Decode(r.Remove(0, 6));  // strip '/ipfs/'.
@@ -452,7 +452,7 @@ namespace Ipfs.Engine
                 log.Error("No listeners were created.");
             }
 
-            // Now that the listener addresses are established, the discovery 
+            // Now that the listener addresses are established, the discovery
             // services can begin.
             MulticastService multicast = null;
             if (!Options.Discovery.DisableMdns)
@@ -530,7 +530,7 @@ namespace Ipfs.Engine
                     stopTasks.Add(async () => await mdns.StopAsync().ConfigureAwait(false));
                     await mdns.StartAsync().ConfigureAwait(false);
                 },
-                async () => 
+                async () =>
                 {
                     if (Options.Discovery.DisableRandomWalk)
                         return;
@@ -638,7 +638,8 @@ namespace Ipfs.Engine
         /// </summary>
         public AsyncLazy<PeerTalk.Protocols.Ping1> PingService { get; private set; }
 
-        #pragma warning disable VSTHRD100 // Avoid async void methods
+#pragma warning disable VSTHRD100 // Avoid async void methods
+
         /// <summary>
         ///   Fired when a peer is discovered.
         /// </summary>
@@ -647,7 +648,7 @@ namespace Ipfs.Engine
         /// <remarks>
         ///   Registers the peer with the <see cref="SwarmService"/>.
         /// </remarks>
-        async void OnPeerDiscovered(object sender, Peer peer)
+        private async void OnPeerDiscovered(object sender, Peer peer)
 #pragma warning restore VSTHRD100 // Avoid async void methods
         {
             try
@@ -663,13 +664,15 @@ namespace Ipfs.Engine
         }
 
         #region IDisposable Support
-        bool disposedValue = false; // To detect redundant calls
+
+        private bool disposedValue = false; // To detect redundant calls
+        private readonly object _lockObject = new();
 
         /// <summary>
         ///  Releases the unmanaged and optionally managed resources.
         /// </summary>
         /// <param name="disposing">
-        ///   <b>true</b> to release both managed and unmanaged resources; <b>false</b> 
+        ///   <b>true</b> to release both managed and unmanaged resources; <b>false</b>
         ///   to release only unmanaged resources.
         /// </param>
         protected virtual void Dispose(bool disposing)
@@ -693,6 +696,7 @@ namespace Ipfs.Engine
         {
             Dispose(true);
         }
-        #endregion
+
+        #endregion IDisposable Support
     }
 }

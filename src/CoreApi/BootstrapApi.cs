@@ -8,13 +8,13 @@ using Newtonsoft.Json.Linq;
 
 namespace Ipfs.Engine.CoreApi
 {
-    class BootstrapApi : IBootstrapApi
+    internal class BootstrapApi : IBootstrapApi
     {
-        IpfsEngine ipfs;
+        private IpfsEngine ipfs;
 
         // From https://github.com/libp2p/go-libp2p-daemon/blob/master/bootstrap.go#L14
         // TODO: Missing the /dnsaddr/... addresses
-        static MultiAddress[] defaults = new MultiAddress[]
+        private static MultiAddress[] defaults = new MultiAddress[]
         {
             "/ip4/104.131.131.82/tcp/4001/ipfs/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ",            // mars.i.ipfs.io
 	        "/ip4/104.236.179.241/tcp/4001/ipfs/QmSoLPppuBtQSGwKDZT2M73ULpjvfd3aZ6ha4oFGL1KrGM",           // pluto.i.ipfs.io
@@ -32,7 +32,7 @@ namespace Ipfs.Engine.CoreApi
             this.ipfs = ipfs;
         }
 
-        public async Task<MultiAddress> AddAsync(MultiAddress address, CancellationToken cancel = default(CancellationToken))
+        public async Task<MultiAddress> AddAsync(MultiAddress address, CancellationToken cancel = default)
         {
             // Throw if missing peer ID
             var _ = address.PeerId;
@@ -47,7 +47,7 @@ namespace Ipfs.Engine.CoreApi
             return address;
         }
 
-        public async Task<IEnumerable<MultiAddress>> AddDefaultsAsync(CancellationToken cancel = default(CancellationToken))
+        public async Task<IEnumerable<MultiAddress>> AddDefaultsAsync(CancellationToken cancel = default)
         {
             foreach (var a in defaults)
             {
@@ -57,7 +57,7 @@ namespace Ipfs.Engine.CoreApi
             return defaults;
         }
 
-        public async Task<IEnumerable<MultiAddress>> ListAsync(CancellationToken cancel = default(CancellationToken))
+        public async Task<IEnumerable<MultiAddress>> ListAsync(CancellationToken cancel = default)
         {
             if (ipfs.Options.Discovery.BootstrapPeers != null)
             {
@@ -82,12 +82,12 @@ namespace Ipfs.Engine.CoreApi
             }
         }
 
-        public async Task RemoveAllAsync(CancellationToken cancel = default(CancellationToken))
+        public async Task RemoveAllAsync(CancellationToken cancel = default)
         {
             await ipfs.Config.SetAsync("Bootstrap", JToken.FromObject(new string[0]), cancel).ConfigureAwait(false);
         }
 
-        public async Task<MultiAddress> RemoveAsync(MultiAddress address, CancellationToken cancel = default(CancellationToken))
+        public async Task<MultiAddress> RemoveAsync(MultiAddress address, CancellationToken cancel = default)
         {
             var addrs = (await ListAsync(cancel).ConfigureAwait(false)).ToList();
             if (!addrs.Any(a => a == address))

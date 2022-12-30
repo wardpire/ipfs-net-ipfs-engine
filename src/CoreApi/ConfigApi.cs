@@ -22,7 +22,7 @@ namespace Ipfs.Engine.CoreApi
     ]
   },
 }");
- 
+
         IpfsEngine ipfs;
         JObject configuration;
 
@@ -31,7 +31,7 @@ namespace Ipfs.Engine.CoreApi
             this.ipfs = ipfs;
         }
 
-        public async Task<JObject> GetAsync(CancellationToken cancel = default(CancellationToken))
+        public async Task<JObject> GetAsync(CancellationToken cancel = default)
         {
             // If first time, load the configuration into memory.
             if (configuration == null)
@@ -54,7 +54,7 @@ namespace Ipfs.Engine.CoreApi
             return configuration;
         }
 
-        public async Task<JToken> GetAsync(string key, CancellationToken cancel = default(CancellationToken))
+        public async Task<JToken> GetAsync(string key, CancellationToken cancel = default)
         {
             JToken config = await GetAsync(cancel).ConfigureAwait(false);
             var keys = key.Split('.');
@@ -76,12 +76,12 @@ namespace Ipfs.Engine.CoreApi
             return SaveAsync();
         }
 
-        public Task SetAsync(string key, string value, CancellationToken cancel = default(CancellationToken))
+        public Task SetAsync(string key, string value, CancellationToken cancel = default)
         {
             return SetAsync(key, JToken.FromObject(value), cancel);
         }
 
-        public async Task SetAsync(string key, JToken value, CancellationToken cancel = default(CancellationToken))
+        public async Task SetAsync(string key, JToken value, CancellationToken cancel = default)
         {
             var config = await GetAsync(cancel).ConfigureAwait(false);
 

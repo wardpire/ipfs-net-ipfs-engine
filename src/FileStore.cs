@@ -117,7 +117,7 @@ namespace Ipfs.Engine
         ///   a <typeparamref name="TValue"/> or <b>null</b> if the <paramref name="name"/>
         ///   does not exist.
         /// </returns>
-        public async Task<TValue> TryGetAsync(TName name, CancellationToken cancel = default(CancellationToken))
+        public async Task<TValue> TryGetAsync(TName name, CancellationToken cancel = default)
         {
             var path = GetPath(name);
             using (await storeLock.ReaderLockAsync().ConfigureAwait(false))
@@ -150,7 +150,7 @@ namespace Ipfs.Engine
         /// <exception cref="KeyNotFoundException">
         ///   When the <paramref name="name"/> does not exist.
         /// </exception>
-        public async Task<TValue> GetAsync(TName name, CancellationToken cancel = default(CancellationToken))
+        public async Task<TValue> GetAsync(TName name, CancellationToken cancel = default)
         {
             var value = await TryGetAsync(name, cancel).ConfigureAwait(false);
             if (value == null)
@@ -180,7 +180,7 @@ namespace Ipfs.Engine
         ///   The file is deleted if an exception is encountered.
         ///   </para>
         /// </remarks>
-        public async Task PutAsync(TName name, TValue value, CancellationToken cancel = default(CancellationToken))
+        public async Task PutAsync(TName name, TValue value, CancellationToken cancel = default)
         {
             var path = GetPath(name);
 
@@ -222,7 +222,7 @@ namespace Ipfs.Engine
         /// <remarks>
         ///   A non-existent <paramref name="name"/> does nothing.
         /// </remarks>
-        public async Task RemoveAsync(TName name, CancellationToken cancel = default(CancellationToken))
+        public async Task RemoveAsync(TName name, CancellationToken cancel = default)
         {
             var path = GetPath(name);
             using (await storeLock.WriterLockAsync(cancel).ConfigureAwait(false))
@@ -247,7 +247,7 @@ namespace Ipfs.Engine
         /// <remarks>
         ///   Return a null when the <paramref name="name"/> does not exist.
         /// </remarks>
-        public async Task<long?> LengthAsync(TName name, CancellationToken cancel = default(CancellationToken))
+        public async Task<long?> LengthAsync(TName name, CancellationToken cancel = default)
         {
             var path = GetPath(name);
 
@@ -274,7 +274,7 @@ namespace Ipfs.Engine
         ///   A task that represents the asynchronous operation. The task's result is
         ///   <b>true</b> if the <paramref name="name"/> exists.
         /// </returns>
-        public async Task<bool> ExistsAsync(TName name, CancellationToken cancel = default(CancellationToken))
+        public async Task<bool> ExistsAsync(TName name, CancellationToken cancel = default)
         {
             var path = GetPath(name);
             using (await storeLock.ReaderLockAsync().ConfigureAwait(false))

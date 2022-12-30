@@ -21,7 +21,7 @@ namespace Ipfs.Engine.Migration
 
         public bool CanDowngrade => true;
 
-        public async Task DowngradeAsync(IpfsEngine ipfs, CancellationToken cancel = default(CancellationToken))
+        public async Task DowngradeAsync(IpfsEngine ipfs, CancellationToken cancel = default)
         {
             var path = Path.Combine(ipfs.Options.Repository.Folder, "pins");
             var folder = new DirectoryInfo(path);
@@ -50,12 +50,11 @@ namespace Ipfs.Engine.Migration
                 }
                 catch
                 {
-
                 }
             }
         }
 
-        public async Task UpgradeAsync(IpfsEngine ipfs, CancellationToken cancel = default(CancellationToken))
+        public async Task UpgradeAsync(IpfsEngine ipfs, CancellationToken cancel = default)
         {
             var path = Path.Combine(ipfs.Options.Repository.Folder, "pins");
             var folder = new DirectoryInfo(path);
@@ -83,10 +82,8 @@ namespace Ipfs.Engine.Migration
                 }
                 catch
                 {
-
                 }
             }
         }
-
     }
 }

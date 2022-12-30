@@ -21,7 +21,7 @@ namespace Ipfs.Engine.CoreApi
             this.ipfs = ipfs;
         }
 
-        public async Task RemoveGarbageAsync(CancellationToken cancel = default(CancellationToken))
+        public async Task RemoveGarbageAsync(CancellationToken cancel = default)
         {
             var blockApi = (BlockApi)ipfs.Block;
             var pinApi = (PinApi)ipfs.Pin;
@@ -34,7 +34,7 @@ namespace Ipfs.Engine.CoreApi
             }
         }
 
-        public async Task<RepositoryData> StatisticsAsync(CancellationToken cancel = default(CancellationToken))
+        public async Task<RepositoryData> StatisticsAsync(CancellationToken cancel = default)
         {
             var data = new RepositoryData
             {
@@ -49,12 +49,12 @@ namespace Ipfs.Engine.CoreApi
             return data;
         }
 
-        public Task VerifyAsync(CancellationToken cancel = default(CancellationToken))
+        public Task VerifyAsync(CancellationToken cancel = default)
         {
             throw new NotImplementedException();
         }
 
-        public Task<string> VersionAsync(CancellationToken cancel = default(CancellationToken))
+        public Task<string> VersionAsync(CancellationToken cancel = default)
         {
             return Task.FromResult(ipfs.MigrationManager
                 .CurrentVersion
@@ -76,6 +76,5 @@ namespace Ipfs.Engine.CoreApi
                 GetDirStats(dir, data, cancel);
             }
         }
-
     }
 }

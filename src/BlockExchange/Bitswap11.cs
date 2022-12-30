@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 namespace Ipfs.Engine.BlockExchange
 {
     /// <summary>
-    ///   Bitswap Protocol version 1.1.0 
+    ///   Bitswap Protocol version 1.1.0
     /// </summary>
     public class Bitswap11 : IBitswapProtocol
     {
@@ -41,7 +41,7 @@ namespace Ipfs.Engine.BlockExchange
         public Bitswap Bitswap { get; set; }
 
         /// <inheritdoc />
-        public async Task ProcessMessageAsync(PeerConnection connection, Stream stream, CancellationToken cancel = default(CancellationToken))
+        public async Task ProcessMessageAsync(PeerConnection connection, Stream stream, CancellationToken cancel = default)
         {
             // There is a race condition between getting the remote identity and
             // the remote sending the first wantlist.
@@ -128,7 +128,7 @@ namespace Ipfs.Engine.BlockExchange
             Stream stream,
             IEnumerable<WantedBlock> wants,
             bool full = true,
-            CancellationToken cancel = default(CancellationToken)
+            CancellationToken cancel = default
             )
         {
             var message = new Message
@@ -155,7 +155,7 @@ namespace Ipfs.Engine.BlockExchange
         internal async Task SendAsync(
             Stream stream,
             IDataBlock block,
-            CancellationToken cancel = default(CancellationToken)
+            CancellationToken cancel = default
             )
         {
             log.Debug($"Sending block {block.Id}");
@@ -242,6 +242,5 @@ namespace Ipfs.Engine.BlockExchange
             [ProtoMember(3)]
             public List<Block> payload;         // used to send Blocks in bitswap 1.1.0
         }
-
     }
 }

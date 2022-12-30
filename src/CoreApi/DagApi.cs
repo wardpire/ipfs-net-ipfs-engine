@@ -26,7 +26,7 @@ namespace Ipfs.Engine.CoreApi
 
         public async Task<JObject> GetAsync(
             Cid id,
-            CancellationToken cancel = default(CancellationToken))
+            CancellationToken cancel = default)
         {
             var block = await ipfs.Block.GetAsync(id, cancel).ConfigureAwait(false);
             var format = GetDataFormat(id);
@@ -43,7 +43,7 @@ namespace Ipfs.Engine.CoreApi
 
         public async Task<JToken> GetAsync(
             string path,
-            CancellationToken cancel = default(CancellationToken))
+            CancellationToken cancel = default)
         {
             if (path.StartsWith("/ipfs/"))
             {
@@ -67,7 +67,7 @@ namespace Ipfs.Engine.CoreApi
 
         public async Task<T> GetAsync<T>(
             Cid id,
-            CancellationToken cancel = default(CancellationToken))
+            CancellationToken cancel = default)
         {
             var block = await ipfs.Block.GetAsync(id, cancel).ConfigureAwait(false);
             var format = GetDataFormat(id);
@@ -87,7 +87,7 @@ namespace Ipfs.Engine.CoreApi
             string multiHash = MultiHash.DefaultAlgorithmName,
             string encoding = MultiBase.DefaultAlgorithmName,
             bool pin = true,
-            CancellationToken cancel = default(CancellationToken))
+            CancellationToken cancel = default)
         {
             using (var ms = new MemoryStream())
             using (var sw = new StreamWriter(ms))
@@ -107,7 +107,7 @@ namespace Ipfs.Engine.CoreApi
             string multiHash = MultiHash.DefaultAlgorithmName,
             string encoding = MultiBase.DefaultAlgorithmName,
             bool pin = true,
-            CancellationToken cancel = default(CancellationToken))
+            CancellationToken cancel = default)
         {
             var format = GetDataFormat(contentType);
             var block = format.Serialize(CBORObject.Read(data));
@@ -119,7 +119,7 @@ namespace Ipfs.Engine.CoreApi
             string multiHash = MultiHash.DefaultAlgorithmName,
             string encoding = MultiBase.DefaultAlgorithmName,
             bool pin = true,
-            CancellationToken cancel = default(CancellationToken))
+            CancellationToken cancel = default)
         {
             var format = GetDataFormat(contentType);
             var block = format.Serialize(CBORObject.FromObject(data, podOptions));

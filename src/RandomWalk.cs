@@ -102,7 +102,7 @@ namespace Ipfs.Engine
             }
         }
 
-        private async Task RunQueryAsync(CancellationToken cancel = default(CancellationToken))
+        private async Task RunQueryAsync(CancellationToken cancel = default)
         {
             // Tests may not set a DHT.
             if (Dht == null)

@@ -21,7 +21,7 @@ namespace Ipfs.Engine.LinkedData
     public interface ILinkedDataFormat
     {
         /// <summary>
-        ///   Convert the binary represention into the equivalent canonical form. 
+        ///   Convert the binary represention into the equivalent canonical form.
         /// </summary>
         /// <param name="data">
         ///   The linked data encoded in a specific format.

@@ -78,4 +78,3 @@ namespace Ipfs.Engine.Cryptography
         public string Hash { get; set; } = "sha2-512";
   }
 }
-

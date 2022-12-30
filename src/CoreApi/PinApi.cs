@@ -43,7 +43,7 @@ namespace Ipfs.Engine.CoreApi
             }
         }
 
-        public async Task<IEnumerable<Cid>> AddAsync(string path, bool recursive = true, CancellationToken cancel = default(CancellationToken))
+        public async Task<IEnumerable<Cid>> AddAsync(string path, bool recursive = true, CancellationToken cancel = default)
         {
             var id = await ipfs.ResolveIpfsPathToCidAsync(path, cancel).ConfigureAwait(false);
             var todos = new Stack<Cid>();
@@ -80,14 +80,14 @@ namespace Ipfs.Engine.CoreApi
             return dones;
         }
 
-        public Task<IEnumerable<Cid>> ListAsync(CancellationToken cancel = default(CancellationToken))
+        public Task<IEnumerable<Cid>> ListAsync(CancellationToken cancel = default)
         {
             var cids = Store.Values
                 .Select(pin => pin.Id);
             return Task.FromResult(cids);
         }
 
-        public async Task<IEnumerable<Cid>> RemoveAsync(Cid id, bool recursive = true, CancellationToken cancel = default(CancellationToken))
+        public async Task<IEnumerable<Cid>> RemoveAsync(Cid id, bool recursive = true, CancellationToken cancel = default)
         {
             var todos = new Stack<Cid>();
             todos.Push(id);
@@ -121,7 +121,7 @@ namespace Ipfs.Engine.CoreApi
             return dones;
         }
 
-        public async Task<bool> IsPinnedAsync(Cid id, CancellationToken cancel = default(CancellationToken))
+        public async Task<bool> IsPinnedAsync(Cid id, CancellationToken cancel = default)
         {
             return await Store.ExistsAsync(id, cancel).ConfigureAwait(false);
         }

@@ -26,7 +26,7 @@ namespace Ipfs.Engine.CoreApi
             this.ipfs = ipfs;
         }
 
-        public async Task<MultiAddress> AddAddressFilterAsync(MultiAddress address, bool persist = false, CancellationToken cancel = default(CancellationToken))
+        public async Task<MultiAddress> AddAddressFilterAsync(MultiAddress address, bool persist = false, CancellationToken cancel = default)
         {
             var addrs = (await ListAddressFiltersAsync(persist, cancel).ConfigureAwait(false)).ToList();
             if (addrs.Any(a => a == address))
@@ -41,13 +41,13 @@ namespace Ipfs.Engine.CoreApi
             return address;
         }
 
-        public async Task<IEnumerable<Peer>> AddressesAsync(CancellationToken cancel = default(CancellationToken))
+        public async Task<IEnumerable<Peer>> AddressesAsync(CancellationToken cancel = default)
         {
             var swarm = await ipfs.SwarmService.ConfigureAwait(false);
             return swarm.KnownPeers;
         }
 
-        public async Task ConnectAsync(MultiAddress address, CancellationToken cancel = default(CancellationToken))
+        public async Task ConnectAsync(MultiAddress address, CancellationToken cancel = default)
         {
             var swarm = await ipfs.SwarmService.ConfigureAwait(false);
             log.Debug($"Connecting to {address}");
@@ -55,13 +55,13 @@ namespace Ipfs.Engine.CoreApi
             log.Debug($"Connected to {conn.RemotePeer.ConnectedAddress}");
         }
 
-        public async Task DisconnectAsync(MultiAddress address, CancellationToken cancel = default(CancellationToken))
+        public async Task DisconnectAsync(MultiAddress address, CancellationToken cancel = default)
         {
             var swarm = await ipfs.SwarmService.ConfigureAwait(false);
             await swarm.DisconnectAsync(address, cancel).ConfigureAwait(false);
         }
 
-        public async Task<IEnumerable<MultiAddress>> ListAddressFiltersAsync(bool persist = false, CancellationToken cancel = default(CancellationToken))
+        public async Task<IEnumerable<MultiAddress>> ListAddressFiltersAsync(bool persist = false, CancellationToken cancel = default)
         {
             try
             {
@@ -81,13 +81,13 @@ namespace Ipfs.Engine.CoreApi
             }
         }
 
-        public async Task<IEnumerable<Peer>> PeersAsync(CancellationToken cancel = default(CancellationToken))
+        public async Task<IEnumerable<Peer>> PeersAsync(CancellationToken cancel = default)
         {
             var swarm = await ipfs.SwarmService.ConfigureAwait(false);
             return swarm.KnownPeers.Where(p => p.ConnectedAddress != null);
         }
 
-        public async Task<MultiAddress> RemoveAddressFilterAsync(MultiAddress address, bool persist = false, CancellationToken cancel = default(CancellationToken))
+        public async Task<MultiAddress> RemoveAddressFilterAsync(MultiAddress address, bool persist = false, CancellationToken cancel = default)
         {
             var addrs = (await ListAddressFiltersAsync(persist, cancel).ConfigureAwait(false)).ToList();
             if (!addrs.Any(a => a == address))

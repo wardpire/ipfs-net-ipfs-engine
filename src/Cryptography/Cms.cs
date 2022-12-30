@@ -32,16 +32,16 @@ namespace Ipfs.Engine.Cryptography
         ///   the cipher text of the <paramref name="plainText"/>.
         /// </returns>
         /// <remarks>
-        ///   Cryptographic Message Syntax (CMS), aka PKCS #7 and 
+        ///   Cryptographic Message Syntax (CMS), aka PKCS #7 and
         ///   <see href="https://tools.ietf.org/html/rfc5652">RFC 5652</see>,
         ///   describes an encapsulation syntax for data protection. It
         ///   is used to digitally sign, digest, authenticate, and/or encrypt
         ///   arbitrary message content.
         /// </remarks>
         public async Task<byte[]> CreateProtectedDataAsync(
-            string keyName, 
-            byte[] plainText, 
-            CancellationToken cancel = default(CancellationToken))
+            string keyName,
+            byte[] plainText,
+            CancellationToken cancel = default)
         {
             // Identify the recipient by the Subject Key ID.
 
@@ -102,7 +102,7 @@ namespace Ipfs.Engine.Cryptography
         ///   When the required private key, to decrypt the data, is not foumd.
         /// </exception>
         /// <remarks>
-        ///   Cryptographic Message Syntax (CMS), aka PKCS #7 and 
+        ///   Cryptographic Message Syntax (CMS), aka PKCS #7 and
         ///   <see href="https://tools.ietf.org/html/rfc5652">RFC 5652</see>,
         ///   describes an encapsulation syntax for data protection. It
         ///   is used to digitally sign, digest, authenticate, and/or encrypt
@@ -110,7 +110,7 @@ namespace Ipfs.Engine.Cryptography
         /// </remarks>
         public async Task<byte[]> ReadProtectedDataAsync(
             byte[] cipherText,
-            CancellationToken cancel = default(CancellationToken))
+            CancellationToken cancel = default)
         {
             var cms = new CmsEnvelopedDataParser(cipherText);
 
@@ -176,6 +176,5 @@ namespace Ipfs.Engine.Cryptography
 
             return null;
         }
-
     }
 }

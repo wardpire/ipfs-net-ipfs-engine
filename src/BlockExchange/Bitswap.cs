@@ -132,7 +132,7 @@ namespace Ipfs.Engine.BlockExchange
             }
             return new BitswapLedger { Peer = peer };
         }
-        
+
         /// <summary>
         ///   Raised when a blocked is needed.
         /// </summary>
@@ -239,7 +239,7 @@ namespace Ipfs.Engine.BlockExchange
         ///   Other peers are informed that the block is needed by this peer. Hopefully,
         ///   someone will forward it to us.
         ///   <para>
-        ///   Besides using <paramref name="cancel"/> for cancellation, the 
+        ///   Besides using <paramref name="cancel"/> for cancellation, the
         ///   <see cref="Unwant"/> method will also cancel the operation.
         ///   </para>
         /// </remarks>
@@ -376,7 +376,7 @@ namespace Ipfs.Engine.BlockExchange
                     BlocksExchanged = 1,
                     DataReceived = (ulong)block.LongLength
                 },
-                (peer, ledger) => 
+                (peer, ledger) =>
                 {
                     ++ledger.BlocksExchanged;
                     DataReceived += (ulong)block.LongLength;
@@ -447,7 +447,7 @@ namespace Ipfs.Engine.BlockExchange
         ///   The number of consumers waiting for the <paramref name="block"/>.
         /// </returns>
         /// <remarks>
-        ///   <b>Found</b> should be called whenever a new block is discovered. 
+        ///   <b>Found</b> should be called whenever a new block is discovered.
         ///   It will continue any Task that is waiting for the block and
         ///   remove the block from the want list.
         /// </remarks>
@@ -516,6 +516,5 @@ namespace Ipfs.Engine.BlockExchange
 
             log.Warn($"{peer} does not support any bitswap protocol");
         }
-
     }
 }

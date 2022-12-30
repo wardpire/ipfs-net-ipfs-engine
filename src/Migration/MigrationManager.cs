@@ -79,7 +79,7 @@ namespace Ipfs.Engine.Migration
         /// <param name="cancel">
         /// </param>
         /// <returns></returns>
-        public async Task MirgrateToVersionAsync(int version, CancellationToken cancel = default(CancellationToken))
+        public async Task MirgrateToVersionAsync(int version, CancellationToken cancel = default)
         {
             if (version != 0 && !Migrations.Any(m => m.Version == version))
             {

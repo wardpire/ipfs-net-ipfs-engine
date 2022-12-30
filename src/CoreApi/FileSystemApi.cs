@@ -27,8 +27,8 @@ namespace Ipfs.Engine.CoreApi
 
         public async Task<IFileSystemNode> AddFileAsync(
             string path,
-            AddFileOptions options = default(AddFileOptions),
-            CancellationToken cancel = default(CancellationToken))
+            AddFileOptions options = default,
+            CancellationToken cancel = default)
         {
             using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
@@ -38,8 +38,8 @@ namespace Ipfs.Engine.CoreApi
 
         public async Task<IFileSystemNode> AddTextAsync(
             string text,
-            AddFileOptions options = default(AddFileOptions),
-            CancellationToken cancel = default(CancellationToken))
+            AddFileOptions options = default,
+            CancellationToken cancel = default)
         {
             using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(text), false))
             {
@@ -157,8 +157,8 @@ namespace Ipfs.Engine.CoreApi
         public async Task<IFileSystemNode> AddDirectoryAsync(
             string path,
             bool recursive = true,
-            AddFileOptions options = default(AddFileOptions),
-            CancellationToken cancel = default(CancellationToken))
+            AddFileOptions options = default,
+            CancellationToken cancel = default)
         {
             options = options ?? new AddFileOptions();
             options.Wrap = false;
@@ -211,7 +211,7 @@ namespace Ipfs.Engine.CoreApi
             };
         }
 
-        public async Task<IFileSystemNode> ListFileAsync(string path, CancellationToken cancel = default(CancellationToken))
+        public async Task<IFileSystemNode> ListFileAsync(string path, CancellationToken cancel = default)
         {
             var cid = await ipfs.ResolveIpfsPathToCidAsync(path, cancel).ConfigureAwait(false);
             var block = await ipfs.Block.GetAsync(cid, cancel).ConfigureAwait(false);
@@ -262,7 +262,7 @@ namespace Ipfs.Engine.CoreApi
             return fsn;
         }
 
-        public async Task<string> ReadAllTextAsync(string path, CancellationToken cancel = default(CancellationToken))
+        public async Task<string> ReadAllTextAsync(string path, CancellationToken cancel = default)
         {
             using (var data = await ReadFileAsync(path, cancel).ConfigureAwait(false))
             using (var text = new StreamReader(data))
@@ -271,20 +271,20 @@ namespace Ipfs.Engine.CoreApi
             }
         }
 
-        public async Task<Stream> ReadFileAsync(string path, CancellationToken cancel = default(CancellationToken))
+        public async Task<Stream> ReadFileAsync(string path, CancellationToken cancel = default)
         {
             var cid = await ipfs.ResolveIpfsPathToCidAsync(path, cancel).ConfigureAwait(false);
             var keyChain = await ipfs.KeyChainAsync(cancel).ConfigureAwait(false);
             return await FileSystem.CreateReadStreamAsync(cid, ipfs.Block, keyChain, cancel).ConfigureAwait(false);
         }
 
-        public async Task<Stream> ReadFileAsync(string path, long offset, long count = 0, CancellationToken cancel = default(CancellationToken))
+        public async Task<Stream> ReadFileAsync(string path, long offset, long count = 0, CancellationToken cancel = default)
         {
             var stream = await ReadFileAsync(path, cancel).ConfigureAwait(false);
             return new SlicedStream(stream, offset, count);
         }
 
-        public async Task<Stream> GetAsync(string path, bool compress = false, CancellationToken cancel = default(CancellationToken))
+        public async Task<Stream> GetAsync(string path, bool compress = false, CancellationToken cancel = default)
         {
             var cid = await ipfs.ResolveIpfsPathToCidAsync(path, cancel).ConfigureAwait(false);
             var ms = new MemoryStream();
@@ -312,9 +312,9 @@ namespace Ipfs.Engine.CoreApi
             var entry = new TarEntry(new TarHeader());
             var header = entry.TarHeader;
             header.Mode = 0x1ff; // 777 in octal
-            header.LinkName = String.Empty;
-            header.UserName = String.Empty;
-            header.GroupName = String.Empty;
+            header.LinkName = string.Empty;
+            header.UserName = string.Empty;
+            header.GroupName = string.Empty;
             header.Version = "00";
             header.Name = name;
             header.DevMajor = 0;
@@ -362,7 +362,7 @@ namespace Ipfs.Engine.CoreApi
         /// </summary>
         private class HashOnlyBlockService : IBlockApi
         {
-            public Task<IDataBlock> GetAsync(Cid id, CancellationToken cancel = default(CancellationToken))
+            public Task<IDataBlock> GetAsync(Cid id, CancellationToken cancel = default)
             {
                 throw new NotImplementedException();
             }
@@ -373,7 +373,7 @@ namespace Ipfs.Engine.CoreApi
                 string multiHash = MultiHash.DefaultAlgorithmName,
                 string encoding = MultiBase.DefaultAlgorithmName,
                 bool pin = false,
-                CancellationToken cancel = default(CancellationToken))
+                CancellationToken cancel = default)
             {
                 var cid = new Cid
                 {
@@ -391,17 +391,17 @@ namespace Ipfs.Engine.CoreApi
                 string multiHash = MultiHash.DefaultAlgorithmName,
                 string encoding = MultiBase.DefaultAlgorithmName,
                 bool pin = false,
-                CancellationToken cancel = default(CancellationToken))
+                CancellationToken cancel = default)
             {
                 throw new NotImplementedException();
             }
 
-            public Task<Cid> RemoveAsync(Cid id, bool ignoreNonexistent = false, CancellationToken cancel = default(CancellationToken))
+            public Task<Cid> RemoveAsync(Cid id, bool ignoreNonexistent = false, CancellationToken cancel = default)
             {
                 throw new NotImplementedException();
             }
 
-            public Task<IDataBlock> StatAsync(Cid id, CancellationToken cancel = default(CancellationToken))
+            public Task<IDataBlock> StatAsync(Cid id, CancellationToken cancel = default)
             {
                 throw new NotImplementedException();
             }

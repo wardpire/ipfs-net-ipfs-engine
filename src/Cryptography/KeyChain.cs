@@ -88,7 +88,7 @@ namespace Ipfs.Engine.Cryptography
         ///   Neither the <paramref name="passphrase"/> nor the DEK are stored.
         ///   </para>
         /// </remarks>
-        public async Task SetPassphraseAsync (SecureString passphrase, CancellationToken cancel = default(CancellationToken))
+        public async Task SetPassphraseAsync (SecureString passphrase, CancellationToken cancel = default)
         {
             // TODO: Verify DEK options.
             // TODO: get digest based on Options.Hash
@@ -133,7 +133,7 @@ namespace Ipfs.Engine.Cryptography
         ///   A task that represents the asynchronous operation. The task's result is
         ///   an <see cref="IKey"/> or <b>null</b> if the the key is not defined.
         /// </returns>
-        public async Task<IKey> FindKeyByNameAsync(string name, CancellationToken cancel = default(CancellationToken))
+        public async Task<IKey> FindKeyByNameAsync(string name, CancellationToken cancel = default)
         {
             var key = await Store.TryGetAsync(name, cancel).ConfigureAwait(false);
             if (key == null)
@@ -159,7 +159,7 @@ namespace Ipfs.Engine.Cryptography
         ///   a type and the DER encoding of the PKCS Subject Public Key Info.
         /// </remarks>
         /// <seealso href="https://tools.ietf.org/html/rfc5280#section-4.1.2.7"/>
-        public async Task<string> GetPublicKeyAsync(string name, CancellationToken cancel = default(CancellationToken))
+        public async Task<string> GetPublicKeyAsync(string name, CancellationToken cancel = default)
         {
             // TODO: Rename to GetIpfsPublicKeyAsync
             string result = null;
@@ -197,7 +197,7 @@ namespace Ipfs.Engine.Cryptography
         }
 
         /// <inheritdoc />
-        public async Task<IKey> CreateAsync(string name, string keyType, int size, CancellationToken cancel = default(CancellationToken))
+        public async Task<IKey> CreateAsync(string name, string keyType, int size, CancellationToken cancel = default)
         {
             // Apply defaults.
             if (string.IsNullOrWhiteSpace(keyType))
@@ -234,7 +234,7 @@ namespace Ipfs.Engine.Cryptography
         }
 
         /// <inheritdoc />
-        public async Task<string> ExportAsync(string name, char[] password, CancellationToken cancel = default(CancellationToken))
+        public async Task<string> ExportAsync(string name, char[] password, CancellationToken cancel = default)
         {
             string pem = "";
             var key = await Store.GetAsync(name, cancel).ConfigureAwait(false);
@@ -257,7 +257,7 @@ namespace Ipfs.Engine.Cryptography
         }
 
         /// <inheritdoc />
-        public async Task<IKey> ImportAsync(string name, string pem, char[] password = null, CancellationToken cancel = default(CancellationToken))
+        public async Task<IKey> ImportAsync(string name, string pem, char[] password = null, CancellationToken cancel = default)
         {
             AsymmetricKeyParameter key;
             using (var sr = new StringReader(pem))
@@ -280,7 +280,7 @@ namespace Ipfs.Engine.Cryptography
         }
 
         /// <inheritdoc />
-        public Task<IEnumerable<IKey>> ListAsync(CancellationToken cancel = default(CancellationToken))
+        public Task<IEnumerable<IKey>> ListAsync(CancellationToken cancel = default)
         {
             var keys = Store
                 .Values
@@ -290,7 +290,7 @@ namespace Ipfs.Engine.Cryptography
         }
 
         /// <inheritdoc />
-        public async Task<IKey> RemoveAsync(string name, CancellationToken cancel = default(CancellationToken))
+        public async Task<IKey> RemoveAsync(string name, CancellationToken cancel = default)
         {
             var key = await Store.TryGetAsync(name, cancel).ConfigureAwait(false);
             if (key == null)
@@ -301,7 +301,7 @@ namespace Ipfs.Engine.Cryptography
         }
 
         /// <inheritdoc />
-        public async Task<IKey> RenameAsync(string oldName, string newName, CancellationToken cancel = default(CancellationToken))
+        public async Task<IKey> RenameAsync(string oldName, string newName, CancellationToken cancel = default)
         {
             var key = await Store.TryGetAsync(oldName, cancel).ConfigureAwait(false);
             if (key == null)
@@ -326,7 +326,7 @@ namespace Ipfs.Engine.Cryptography
         ///   A task that represents the asynchronous operation. The task's result is
         ///   the private key as an <b>AsymmetricKeyParameter</b>.
         /// </returns>
-        public async Task<AsymmetricKeyParameter> GetPrivateKeyAsync(string name, CancellationToken cancel = default(CancellationToken))
+        public async Task<AsymmetricKeyParameter> GetPrivateKeyAsync(string name, CancellationToken cancel = default)
         {
             var key = await Store.TryGetAsync(name, cancel).ConfigureAwait(false);
             if (key == null)

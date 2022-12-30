@@ -17,7 +17,7 @@ namespace Ipfs.Engine.CoreApi
             this.ipfs = ipfs;
         }
 
-        public async Task<Peer> IdAsync(MultiHash peer = null, CancellationToken cancel = default(CancellationToken))
+        public async Task<Peer> IdAsync(MultiHash peer = null, CancellationToken cancel = default)
         {
             if (peer == null)
             {
@@ -27,19 +27,19 @@ namespace Ipfs.Engine.CoreApi
             return await ipfs.Dht.FindPeerAsync(peer, cancel).ConfigureAwait(false);
         }
 
-        public async Task<IEnumerable<PingResult>> PingAsync(MultiHash peer, int count = 10, CancellationToken cancel = default(CancellationToken))
+        public async Task<IEnumerable<PingResult>> PingAsync(MultiHash peer, int count = 10, CancellationToken cancel = default)
         {
             var ping = await ipfs.PingService;
             return await ping.PingAsync(peer, count, cancel);
         }
 
-        public async Task<IEnumerable<PingResult>> PingAsync(MultiAddress address, int count = 10, CancellationToken cancel = default(CancellationToken))
+        public async Task<IEnumerable<PingResult>> PingAsync(MultiAddress address, int count = 10, CancellationToken cancel = default)
         {
             var ping = await ipfs.PingService;
             return await ping.PingAsync(address, count, cancel);
         }
 
-        public async Task<string> ResolveAsync(string name, bool recursive = true, CancellationToken cancel = default(CancellationToken))
+        public async Task<string> ResolveAsync(string name, bool recursive = true, CancellationToken cancel = default)
         {
             var path = name;
             if (path.StartsWith("/ipns/"))
@@ -75,7 +75,7 @@ namespace Ipfs.Engine.CoreApi
             return ipfs.StopAsync();
         }
 
-        public async Task<Dictionary<string, string>> VersionAsync(CancellationToken cancel = default(CancellationToken))
+        public async Task<Dictionary<string, string>> VersionAsync(CancellationToken cancel = default)
         {
             var version = typeof(GenericApi).GetTypeInfo().Assembly.GetName().Version;
             return new Dictionary<string, string>
