@@ -10,9 +10,9 @@ using Newtonsoft.Json.Linq;
 
 namespace Ipfs.Engine.CoreApi
 {
-    class ConfigApi : IConfigApi
+    internal class ConfigApi : IConfigApi
     {
-        static JObject defaultConfiguration = JObject.Parse(@"{
+        private static JObject defaultConfiguration = JObject.Parse(@"{
   ""Addresses"": {
     ""API"": ""/ip4/127.0.0.1/tcp/5001"",
     ""Gateway"": ""/ip4/127.0.0.1/tcp/8080"",
@@ -23,8 +23,8 @@ namespace Ipfs.Engine.CoreApi
   },
 }");
 
-        IpfsEngine ipfs;
-        JObject configuration;
+        private readonly IpfsEngine ipfs;
+        private JObject configuration;
 
         public ConfigApi(IpfsEngine ipfs)
         {
@@ -39,11 +39,9 @@ namespace Ipfs.Engine.CoreApi
                 var path = Path.Combine(ipfs.Options.Repository.ExistingFolder(), "config");
                 if (File.Exists(path))
                 {
-                    using (var reader = File.OpenText(path))
-                    using (var jtr = new JsonTextReader(reader))
-                    {
-                        configuration = await JObject.LoadAsync(jtr).ConfigureAwait(false);
-                    }
+                    using var reader = File.OpenText(path);
+                    using var jtr = new JsonTextReader(reader);
+                    configuration = await JObject.LoadAsync(jtr).ConfigureAwait(false);
                 }
                 else
                 {
@@ -69,10 +67,7 @@ namespace Ipfs.Engine.CoreApi
 
         public Task ReplaceAsync(JObject config)
         {
-            if (config == null)
-                throw new ArgumentNullException("config");
-
-            configuration = config;
+            configuration = config ?? throw new ArgumentNullException(nameof(config));
             return SaveAsync();
         }
 
@@ -89,8 +84,7 @@ namespace Ipfs.Engine.CoreApi
             var keys = key.Split('.');
             foreach (var name in keys.Take(keys.Length - 1))
             {
-                var token = config[name] as JObject;
-                if (token == null)
+                if (config[name] is not JObject token)
                 {
                     token = new JObject();
                     config[name] = token;
@@ -102,15 +96,13 @@ namespace Ipfs.Engine.CoreApi
             await SaveAsync().ConfigureAwait(false);
         }
 
-        async Task SaveAsync()
+        private async Task SaveAsync()
         {
             var path = Path.Combine(ipfs.Options.Repository.Folder, "config");
-            using (var fs = File.OpenWrite(path))
-            using (var writer = new StreamWriter(fs))
-            using (var jtw = new JsonTextWriter(writer) { Formatting = Formatting.Indented })
-            {
-                await configuration.WriteToAsync(jtw).ConfigureAwait(false);
-            }
+            using var fs = File.OpenWrite(path);
+            using var writer = new StreamWriter(fs);
+            using var jtw = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
+            await configuration.WriteToAsync(jtw).ConfigureAwait(false);
         }
     }
 }

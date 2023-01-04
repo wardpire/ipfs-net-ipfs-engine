@@ -8,9 +8,9 @@ using Ipfs.CoreApi;
 
 namespace Ipfs.Engine.CoreApi
 {
-    class KeyApi : IKeyApi
+    internal class KeyApi : IKeyApi
     {
-        IpfsEngine ipfs;
+        private readonly IpfsEngine ipfs;
 
         public KeyApi(IpfsEngine ipfs)
         {

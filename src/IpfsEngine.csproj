@@ -16,12 +16,12 @@
 
 		<!-- Nuget specs -->
 		<PackageId>Ipfs.Engine</PackageId>
-		<Authors>Richard Schneider</Authors>
+		<Authors>Myina</Authors>
 		<Title>IPFS Engine</Title>
 		<Description>An embedded IPFS engine for .Net</Description>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-		<PackageReleaseNotes>https://github.com/richardschneider/net-ipfs-engine/releases</PackageReleaseNotes>
-		<Copyright>© 2018-2019 Richard Schneider</Copyright>
+		<PackageReleaseNotes>https://github.com/Myina/net-ipfs-engine/releases</PackageReleaseNotes>
+		<Copyright>© 2022 Myina</Copyright>
 		<PackageTags>ipfs peer-to-peer p2p distributed file-system web</PackageTags>
 		<IncludeSymbols>True</IncludeSymbols>
 		<PackageProjectUrl>https://github.com/richardschneider/net-ipfs-engine</PackageProjectUrl>
@@ -53,6 +53,8 @@
 		<PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
 		<PackageReference Include="SharpZipLib" Version="1.4.1" />
 		<PackageReference Include="protobuf-net" Version="3.1.26" />
+		<PackageReference Include="SimpleBase" Version="4.0.0" />
+		<PackageReference Include="IPNetwork2" Version="2.6.548" />
 	</ItemGroup>
 
 	<ItemGroup>

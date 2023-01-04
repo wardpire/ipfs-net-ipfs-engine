@@ -15,8 +15,8 @@ namespace Ipfs.Engine.CoreApi
 {
     internal class FileSystemApi : IFileSystemApi
     {
-        private static ILog log = LogManager.GetLogger(typeof(FileSystemApi));
-        private IpfsEngine ipfs;
+        private static readonly ILog log = LogManager.GetLogger(typeof(FileSystemApi));
+        private readonly IpfsEngine ipfs;
 
         private static readonly int DefaultLinksPerBlock = 174;
 
@@ -53,7 +53,7 @@ namespace Ipfs.Engine.CoreApi
             AddFileOptions options,
             CancellationToken cancel)
         {
-            options = options ?? new AddFileOptions();
+            options ??= new AddFileOptions();
 
             // TODO: various options
             if (options.Trickle) throw new NotImplementedException("Trickle");
@@ -89,9 +89,7 @@ namespace Ipfs.Engine.CoreApi
             return node;
         }
 
-        private async Task<FileSystemNode> BuildTreeAsync(
-            IEnumerable<FileSystemNode> nodes,
-            AddFileOptions options,
+        private async Task<FileSystemNode> BuildTreeAsync(IEnumerable<FileSystemNode> nodes, AddFileOptions options,
             CancellationToken cancel)
         {
             if (nodes.Count() == 1)
@@ -101,12 +99,12 @@ namespace Ipfs.Engine.CoreApi
 
             // Bundle DefaultLinksPerBlock links into a block.
             var tree = new List<FileSystemNode>();
-            for (int i = 0; true; ++i)
+            for (int i = 0; ; ++i)
             {
                 var bundle = nodes
                     .Skip(DefaultLinksPerBlock * i)
                     .Take(DefaultLinksPerBlock);
-                if (bundle.Count() == 0)
+                if (!bundle.Any())
                 {
                     break;
                 }
@@ -134,7 +132,7 @@ namespace Ipfs.Engine.CoreApi
                 BlockSizes = nodes.Select(n => (ulong)n.Size).ToArray()
             };
             var pb = new MemoryStream();
-            ProtoBuf.Serializer.Serialize<DataMessage>(pb, dm);
+            ProtoBuf.Serializer.Serialize(pb, dm);
             var dag = new DagNode(pb.ToArray(), links, options.Hash);
 
             // Save it.
@@ -160,7 +158,7 @@ namespace Ipfs.Engine.CoreApi
             AddFileOptions options = default,
             CancellationToken cancel = default)
         {
-            options = options ?? new AddFileOptions();
+            options ??= new AddFileOptions();
             options.Wrap = false;
 
             // Add the files and sub-directories.
@@ -192,7 +190,7 @@ namespace Ipfs.Engine.CoreApi
         {
             var dm = new DataMessage { Type = DataType.Directory };
             var pb = new MemoryStream();
-            ProtoBuf.Serializer.Serialize<DataMessage>(pb, dm);
+            ProtoBuf.Serializer.Serialize(pb, dm);
             var dag = new DagNode(pb.ToArray(), links, options.Hash);
 
             // Save it.
@@ -264,11 +262,9 @@ namespace Ipfs.Engine.CoreApi
 
         public async Task<string> ReadAllTextAsync(string path, CancellationToken cancel = default)
         {
-            using (var data = await ReadFileAsync(path, cancel).ConfigureAwait(false))
-            using (var text = new StreamReader(data))
-            {
-                return await text.ReadToEndAsync().ConfigureAwait(false);
-            }
+            using var data = await ReadFileAsync(path, cancel).ConfigureAwait(false);
+            using var text = new StreamReader(data);
+            return await text.ReadToEndAsync().ConfigureAwait(false);
         }
 
         public async Task<Stream> ReadFileAsync(string path, CancellationToken cancel = default)

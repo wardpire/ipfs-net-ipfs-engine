@@ -21,7 +21,7 @@ namespace Ipfs.Engine.BlockExchange
     /// </summary>
     public class Bitswap1 : IBitswapProtocol
     {
-        static ILog log = LogManager.GetLogger(typeof(Bitswap1));
+        private static readonly ILog log = LogManager.GetLogger(typeof(Bitswap1));
 
         /// <inheritdoc />
         public string Name { get; } = "ipfs/bitswap";
@@ -52,12 +52,12 @@ namespace Ipfs.Engine.BlockExchange
             log.Debug($"got message from {connection.RemotePeer}");
 
             // Process want list
-            if (request.wantlist != null && request.wantlist.entries != null)
+            if (request.wantlist?.entries != null)
             {
                 log.Debug("got want list");
                 foreach (var entry in request.wantlist.entries)
                 {
-                    var s = Base58.ToBase58(entry.block);
+                    var s = entry.block.ToBase58();
                     Cid cid = s;
                     if (entry.cancel)
                     {
@@ -66,8 +66,9 @@ namespace Ipfs.Engine.BlockExchange
                     }
                     else
                     {
-                        // TODO: Should we have a timeout?
-                        var _ = GetBlockAsync(cid, connection.RemotePeer, CancellationToken.None);
+                        // TODO: find the optimal wait time for blocks
+                        var ctx = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+                        await GetBlockAsync(cid, connection.RemotePeer, ctx.Token);
                     }
                 }
             }
@@ -85,7 +86,7 @@ namespace Ipfs.Engine.BlockExchange
             }
         }
 
-        async Task GetBlockAsync(Cid cid, Peer remotePeer, CancellationToken cancel)
+        private async Task GetBlockAsync(Cid cid, Peer remotePeer, CancellationToken cancel)
         {
             // TODO: Determine if we will fetch the block for the remote
             try
@@ -163,10 +164,9 @@ namespace Ipfs.Engine.BlockExchange
         }
 
         [ProtoContract]
-        class Entry
+        private class Entry
         {
             [ProtoMember(1)]
-            // changed from string to bytes, it makes a difference in JavaScript
             public byte[] block;      // the block cid (cidV0 in bitswap 1.0.0, cidV1 in bitswap 1.1.0)
 
             [ProtoMember(2)]
@@ -177,7 +177,7 @@ namespace Ipfs.Engine.BlockExchange
         }
 
         [ProtoContract]
-        class Wantlist
+        private class Wantlist
         {
             [ProtoMember(1)]
             public Entry[] entries;       // a list of wantlist entries
@@ -187,7 +187,7 @@ namespace Ipfs.Engine.BlockExchange
         }
 
         [ProtoContract]
-        class Message
+        private class Message
         {
             [ProtoMember(1)]
             public Wantlist wantlist;

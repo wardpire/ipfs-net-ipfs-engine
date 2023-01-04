@@ -9,6 +9,7 @@ using Ipfs.CoreApi;
 using Ipfs.Engine.LinkedData;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Org.BouncyCastle.Asn1.Ocsp;
 using PeterO.Cbor;
 
 namespace Ipfs.Engine.CoreApi
@@ -17,7 +18,7 @@ namespace Ipfs.Engine.CoreApi
     {
         private static readonly PODOptions podOptions = new("usecamelcase=false");
 
-        private IpfsEngine ipfs;
+        private readonly IpfsEngine ipfs;
 
         public DagApi(IpfsEngine ipfs)
         {
@@ -31,19 +32,15 @@ namespace Ipfs.Engine.CoreApi
             var block = await ipfs.Block.GetAsync(id, cancel).ConfigureAwait(false);
             var format = GetDataFormat(id);
             var canonical = format.Deserialise(block.DataBytes);
-            using (var ms = new MemoryStream())
-            using (var sr = new StreamReader(ms))
-            using (var reader = new JsonTextReader(sr))
-            {
-                canonical.WriteJSONTo(ms);
-                ms.Position = 0;
-                return (JObject)JObject.ReadFrom(reader);
-            }
+            using var ms = new MemoryStream();
+            using var sr = new StreamReader(ms);
+            using var reader = new JsonTextReader(sr);
+            canonical.WriteJSONTo(ms);
+            ms.Position = 0;
+            return (JObject)JObject.ReadFrom(reader);
         }
 
-        public async Task<JToken> GetAsync(
-            string path,
-            CancellationToken cancel = default)
+        public async Task<JToken> GetAsync(string path, CancellationToken cancel = default)
         {
             if (path.StartsWith("/ipfs/"))
             {
@@ -55,9 +52,10 @@ namespace Ipfs.Engine.CoreApi
                 throw new ArgumentException($"Cannot resolve '{path}'.");
 
             JToken token = await GetAsync(Cid.Decode(parts[0]), cancel).ConfigureAwait(false);
+
             foreach (var child in parts.Skip(1))
             {
-                token = ((JObject)token)[child];
+                token = token[child];
                 if (token == null)
                     throw new Exception($"Missing component '{child}'.");
             }
@@ -65,9 +63,7 @@ namespace Ipfs.Engine.CoreApi
             return token;
         }
 
-        public async Task<T> GetAsync<T>(
-            Cid id,
-            CancellationToken cancel = default)
+        public async Task<T> GetAsync<T>(Cid id, CancellationToken cancel = default)
         {
             var block = await ipfs.Block.GetAsync(id, cancel).ConfigureAwait(false);
             var format = GetDataFormat(id);
@@ -89,17 +85,15 @@ namespace Ipfs.Engine.CoreApi
             bool pin = true,
             CancellationToken cancel = default)
         {
-            using (var ms = new MemoryStream())
-            using (var sw = new StreamWriter(ms))
-            using (var writer = new JsonTextWriter(sw))
-            {
-                await data.WriteToAsync(writer);
-                writer.Flush();
-                ms.Position = 0;
-                var format = GetDataFormat(contentType);
-                var block = format.Serialize(CBORObject.ReadJSON(ms));
-                return await ipfs.Block.PutAsync(block, contentType, multiHash, encoding, pin, cancel).ConfigureAwait(false);
-            }
+            using var ms = new MemoryStream();
+            using var sw = new StreamWriter(ms);
+            using var writer = new JsonTextWriter(sw);
+            await data.WriteToAsync(writer);
+            writer.Flush();
+            ms.Position = 0;
+            var format = GetDataFormat(contentType);
+            var block = format.Serialize(CBORObject.ReadJSON(ms));
+            return await ipfs.Block.PutAsync(block, contentType, multiHash, encoding, pin, cancel).ConfigureAwait(false);
         }
 
         public async Task<Cid> PutAsync(Stream data,

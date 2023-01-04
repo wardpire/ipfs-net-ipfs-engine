@@ -10,11 +10,11 @@ namespace Ipfs.Engine.CoreApi
 {
     internal class BootstrapApi : IBootstrapApi
     {
-        private IpfsEngine ipfs;
+        private readonly IpfsEngine ipfs;
 
         // From https://github.com/libp2p/go-libp2p-daemon/blob/master/bootstrap.go#L14
         // TODO: Missing the /dnsaddr/... addresses
-        private static MultiAddress[] defaults = new MultiAddress[]
+        private static readonly MultiAddress[] defaults = new MultiAddress[]
         {
             "/ip4/104.131.131.82/tcp/4001/ipfs/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ",            // mars.i.ipfs.io
 	        "/ip4/104.236.179.241/tcp/4001/ipfs/QmSoLPppuBtQSGwKDZT2M73ULpjvfd3aZ6ha4oFGL1KrGM",           // pluto.i.ipfs.io
@@ -68,7 +68,7 @@ namespace Ipfs.Engine.CoreApi
             {
                 var json = await ipfs.Config.GetAsync("Bootstrap", cancel);
                 if (json == null)
-                    return new MultiAddress[0];
+                    return Array.Empty<MultiAddress>();
 
                 return json
                     .Select(a => MultiAddress.TryCreate((string)a))
@@ -84,7 +84,7 @@ namespace Ipfs.Engine.CoreApi
 
         public async Task RemoveAllAsync(CancellationToken cancel = default)
         {
-            await ipfs.Config.SetAsync("Bootstrap", JToken.FromObject(new string[0]), cancel).ConfigureAwait(false);
+            await ipfs.Config.SetAsync("Bootstrap", JToken.FromObject(Array.Empty<string>()), cancel).ConfigureAwait(false);
         }
 
         public async Task<MultiAddress> RemoveAsync(MultiAddress address, CancellationToken cancel = default)

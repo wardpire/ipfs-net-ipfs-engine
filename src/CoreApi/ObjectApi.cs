@@ -10,22 +10,22 @@ using Ipfs.Engine.UnixFileSystem;
 
 namespace Ipfs.Engine.CoreApi
 {
-    class ObjectApi : IObjectApi
+    internal class ObjectApi : IObjectApi
     {
         internal static DagNode EmptyNode;
         internal static DagNode EmptyDirectory;
 
-        IpfsEngine ipfs;
+        private readonly IpfsEngine ipfs;
 
         static ObjectApi()
         {
-            EmptyNode = new DagNode(new byte[0]);
+            EmptyNode = new DagNode(Array.Empty<byte>());
             var _ = EmptyNode.Id;
 
             var dm = new DataMessage { Type = DataType.Directory };
             using (var pb = new MemoryStream())
             {
-                ProtoBuf.Serializer.Serialize<DataMessage>(pb, dm);
+                ProtoBuf.Serializer.Serialize(pb, dm);
                 EmptyDirectory = new DagNode(pb.ToArray());
             }
             _ = EmptyDirectory.Id;
@@ -66,10 +66,12 @@ namespace Ipfs.Engine.CoreApi
             {
                 case null:
                     return Task.FromResult(EmptyNode);
+
                 case "unixfs-dir":
                     return Task.FromResult(EmptyDirectory);
+
                 default:
-                    throw new ArgumentException($"Unknown template '{template}'.", "template");
+                    throw new ArgumentException($"Unknown template '{template}'.", nameof(template));
             }
         }
 

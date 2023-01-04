@@ -12,9 +12,9 @@ using System.Globalization;
 
 namespace Ipfs.Engine.CoreApi
 {
-    class BlockRepositoryApi : IBlockRepositoryApi
+    internal class BlockRepositoryApi : IBlockRepositoryApi
     {
-        IpfsEngine ipfs;
+        private readonly IpfsEngine ipfs;
 
         public BlockRepositoryApi(IpfsEngine ipfs)
         {
@@ -36,11 +36,19 @@ namespace Ipfs.Engine.CoreApi
 
         public async Task<RepositoryData> StatisticsAsync(CancellationToken cancel = default)
         {
+            ulong maxStorage = 10000000000;
+            if (OperatingSystem.IsWindows() || OperatingSystem.IsLinux())
+            {
+                DriveInfo[] allDrives = DriveInfo.GetDrives();
+                var totalSize = allDrives.Sum(d => d.TotalSize); // since most devices are single drive
+                maxStorage = Convert.ToUInt64(totalSize * 0.35); // use 30% of total storage
+            }
+
             var data = new RepositoryData
             {
                 RepoPath = Path.GetFullPath(ipfs.Options.Repository.Folder),
                 Version = await VersionAsync(cancel).ConfigureAwait(false),
-                StorageMax = 10000000000 // TODO: there is no storage max
+                StorageMax = maxStorage
             };
 
             var blockApi = (BlockApi)ipfs.Block;
@@ -61,7 +69,7 @@ namespace Ipfs.Engine.CoreApi
                 .ToString(CultureInfo.InvariantCulture));
         }
 
-        void GetDirStats(string path, RepositoryData data, CancellationToken cancel)
+        private void GetDirStats(string path, RepositoryData data, CancellationToken cancel)
         {
             foreach (var file in Directory.EnumerateFiles(path))
             {

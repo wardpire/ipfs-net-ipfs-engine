@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -22,10 +21,9 @@ namespace Ipfs.Engine
     /// <remarks>
     ///   All operations are atomic, a reader/writer lock is used.
     /// </remarks>
-    public class FileStore<TName, TValue>
-        where TValue : class
+    public class FileStore<TName, TValue> where TValue : class
     {
-        private AsyncReaderWriterLock storeLock = new AsyncReaderWriterLock();
+        private readonly AsyncReaderWriterLock storeLock = new();
 
         /// <summary>
         ///   A function to write the JSON encoded entity to the stream.
@@ -34,16 +32,14 @@ namespace Ipfs.Engine
         ///   This is the default <see cref="Serialize"/>.
         /// </remarks>
         public static Func<Stream, TName, TValue, CancellationToken, Task> JsonSerialize =
-            (stream, name, value, canel) =>
+            (stream, _, value, __) =>
             {
-                using (var writer = new StreamWriter(stream))
-                using (var jtw = new JsonTextWriter(writer) { Formatting = Formatting.Indented })
-                {
-                    var ser = new JsonSerializer();
-                    ser.Serialize(jtw, value);
-                    jtw.Flush();
-                    return Task.CompletedTask;
-                }
+                using var writer = new StreamWriter(stream);
+                using var jtw = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
+                var ser = new JsonSerializer();
+                ser.Serialize(jtw, value);
+                jtw.Flush();
+                return Task.CompletedTask;
             };
 
         /// <summary>
@@ -53,14 +49,12 @@ namespace Ipfs.Engine
         ///   This is the default <see cref="Deserialize"/>.
         /// </remarks>
         public static Func<Stream, TName, CancellationToken, Task<TValue>> JsonDeserialize =
-            (stream, name, cancel) =>
+            (stream, _, __) =>
             {
-                using (var reader = new StreamReader(stream))
-                using (var jtr = new JsonTextReader(reader))
-                {
-                    var ser = new JsonSerializer();
-                    return Task.FromResult(ser.Deserialize<TValue>(jtr));
-                }
+                using var reader = new StreamReader(stream);
+                using var jtr = new JsonTextReader(reader);
+                var ser = new JsonSerializer();
+                return Task.FromResult(ser.Deserialize<TValue>(jtr));
             };
 
         /// <summary>
@@ -251,7 +245,7 @@ namespace Ipfs.Engine
         {
             var path = GetPath(name);
 
-            using (await storeLock.ReaderLockAsync().ConfigureAwait(false))
+            using (await storeLock.ReaderLockAsync(cancel).ConfigureAwait(false))
             {
                 var fi = new FileInfo(path);
                 long? length = null;
@@ -277,7 +271,7 @@ namespace Ipfs.Engine
         public async Task<bool> ExistsAsync(TName name, CancellationToken cancel = default)
         {
             var path = GetPath(name);
-            using (await storeLock.ReaderLockAsync().ConfigureAwait(false))
+            using (await storeLock.ReaderLockAsync(cancel).ConfigureAwait(false))
             {
                 return File.Exists(path);
             }

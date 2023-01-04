@@ -52,10 +52,7 @@ namespace Ipfs.Engine.Cryptography
             if (ekey == null)
                 throw new KeyNotFoundException($"The key '{keyName}' does not exist.");
             AsymmetricCipherKeyPair kp = null;
-            UseEncryptedKey(ekey, key =>
-            {
-                kp = this.GetKeyPairFromPrivateKey(key);
-            });
+            UseEncryptedKey(ekey, key => kp = this.GetKeyPairFromPrivateKey(key));
 
             // A signer for the key.
             var ku = new KeyUsage(KeyUsage.DigitalSignature
@@ -77,7 +74,7 @@ namespace Ipfs.Engine.Cryptography
             else if (kp.Private is Ed25519PrivateKeyParameters)
             {
                 signatureFactory = new Asn1SignatureFactory(
-                    EdECObjectIdentifiers.id_Ed25519.Id.ToString(),
+                    EdECObjectIdentifiers.id_Ed25519.Id,
                     kp.Private);
                 ku = new KeyUsage(KeyUsage.DigitalSignature);
             }

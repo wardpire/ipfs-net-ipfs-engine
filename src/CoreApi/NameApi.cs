@@ -8,9 +8,9 @@ using Ipfs.CoreApi;
 
 namespace Ipfs.Engine.CoreApi
 {
-    class NameApi : INameApi
+    internal class NameApi : INameApi
     {
-        IpfsEngine ipfs;
+        private readonly IpfsEngine ipfs;
 
         public NameApi(IpfsEngine ipfs)
         {
@@ -33,7 +33,7 @@ namespace Ipfs.Engine.CoreApi
             {
                 if (name.StartsWith("/ipns/"))
                 {
-                    name = name.Substring(6);
+                    name = name[6..];
                 }
                 var parts = name.Split('/').Where(p => p.Length > 0).ToArray();
                 if (parts.Length == 0)

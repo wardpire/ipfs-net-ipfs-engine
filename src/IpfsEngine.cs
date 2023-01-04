@@ -33,11 +33,11 @@ namespace Ipfs.Engine
     /// </remarks>
     public partial class IpfsEngine : ICoreApi, IService, IDisposable
     {
-        private static ILog log = LogManager.GetLogger(typeof(IpfsEngine));
+        private static readonly ILog log = LogManager.GetLogger(typeof(IpfsEngine));
 
         private KeyChain keyChain;
         private SecureString passphrase;
-        private ConcurrentBag<Func<Task>> stopTasks = new ConcurrentBag<Func<Task>>();
+        private ConcurrentBag<Func<Task>> stopTasks = new();
 
         /// <summary>
         ///   Creates a new instance of the <see cref="IpfsEngine"/> class
@@ -49,8 +49,10 @@ namespace Ipfs.Engine
         public IpfsEngine()
         {
             var s = Environment.GetEnvironmentVariable("IPFS_PASS");
-            if (s == null)
+            if (string.IsNullOrWhiteSpace(s))
+            {
                 throw new Exception("The IPFS_PASS environement variable is missing.");
+            }
 
             passphrase = new SecureString();
             foreach (var c in s)
@@ -130,7 +132,7 @@ namespace Ipfs.Engine
                 var localPeer = new Peer
                 {
                     Id = self.Id,
-                    PublicKey = await keyChain.GetPublicKeyAsync("self").ConfigureAwait(false),
+                    PublicKey = await keyChain.GetIpfsPublicKeyAsync("self").ConfigureAwait(false),
                     ProtocolVersion = "ipfs/0.1.0"
                 };
                 var version = typeof(IpfsEngine).GetTypeInfo().Assembly.GetName().Version;
@@ -292,28 +294,30 @@ namespace Ipfs.Engine
         public async Task<KeyChain> KeyChainAsync(CancellationToken cancel = default)
         {
             // TODO: this should be a LazyAsync property.
-            if (keyChain == null)
+            if (keyChain != null)
             {
-                lock (_lockObject)
-                {
-                    if (keyChain == null)
-                    {
-                        keyChain = new KeyChain(this)
-                        {
-                            Options = Options.KeyChain
-                        };
-                    }
-                }
-
-                await keyChain.SetPassphraseAsync(passphrase, cancel).ConfigureAwait(false);
-
-                // Maybe create "self" key, this is the local peer's id.
-                var self = await keyChain.FindKeyByNameAsync("self", cancel).ConfigureAwait(false);
-                if (self == null)
-                {
-                    self = await keyChain.CreateAsync("self", null, 0, cancel).ConfigureAwait(false);
-                }
+                return keyChain;
             }
+
+            lock (_lockObject)
+            {
+                keyChain ??= new KeyChain(this)
+                {
+                    Options = Options.KeyChain
+                };
+            }
+
+            await keyChain.SetPassphraseAsync(passphrase, cancel).ConfigureAwait(false);
+
+            // find key "self" key, this is the local peer's id.
+            var self = await keyChain.FindKeyByNameAsync("self", cancel).ConfigureAwait(false);
+
+            // consider creating "self" key, this is the local peer's id.
+            if (string.IsNullOrWhiteSpace(self?.Name))
+            {
+                await keyChain.CreateAsync("self", null, 0, cancel).ConfigureAwait(false);
+            }
+
             return keyChain;
         }
 
@@ -355,7 +359,7 @@ namespace Ipfs.Engine
         /// </value>
         /// <seealso cref="Start"/>
         /// <seealso cref="StartAsync"/>
-        public bool IsStarted => stopTasks.Count > 0;
+        public bool IsStarted => !stopTasks.IsEmpty;
 
         /// <summary>
         ///   Starts the network services.
@@ -372,7 +376,7 @@ namespace Ipfs.Engine
         /// </exception>
         public async Task StartAsync()
         {
-            if (stopTasks.Count > 0)
+            if (!stopTasks.IsEmpty)
             {
                 throw new Exception("IPFS engine is already started.");
             }
@@ -386,18 +390,12 @@ namespace Ipfs.Engine
 
             // Everybody needs the swarm.
             var swarm = await SwarmService.ConfigureAwait(false);
-            stopTasks.Add(async () =>
-            {
-                await swarm.StopAsync().ConfigureAwait(false);
-            });
+            stopTasks.Add(swarm.StopAsync);
             await swarm.StartAsync().ConfigureAwait(false);
 
             var peerManager = new PeerManager { Swarm = swarm };
             await peerManager.StartAsync().ConfigureAwait(false);
-            stopTasks.Add(async () =>
-            {
-                await peerManager.StopAsync().ConfigureAwait(false);
-            });
+            stopTasks.Add(async () => await peerManager.StopAsync().ConfigureAwait(false));
 
             // Start the primary services.
             var tasks = new List<Func<Task>>
@@ -434,7 +432,7 @@ namespace Ipfs.Engine
             // Starting listening to the swarm.
             var json = await Config.GetAsync("Addresses.Swarm").ConfigureAwait(false);
             var numberListeners = 0;
-            foreach (string a in json)
+            foreach (string a in json.Select(v => (string)v))
             {
                 try
                 {
@@ -573,7 +571,7 @@ namespace Ipfs.Engine
             // Many services use cancellation to stop.  A cancellation may not run
             // immediately, so we need to give them some.
             // TODO: Would be nice to make this deterministic.
-            await Task.Delay(TimeSpan.FromMilliseconds(100)).ConfigureAwait(false);
+            await Task.Delay(TimeSpan.FromMilliseconds(128)).ConfigureAwait(false);
 
             log.Debug("stopped");
         }
@@ -692,10 +690,7 @@ namespace Ipfs.Engine
         /// <summary>
         ///   Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
-        public void Dispose()
-        {
-            Dispose(true);
-        }
+        public void Dispose() => Dispose(true);
 
         #endregion IDisposable Support
     }

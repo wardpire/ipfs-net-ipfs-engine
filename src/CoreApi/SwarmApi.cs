@@ -12,14 +12,12 @@ using Common.Logging;
 
 namespace Ipfs.Engine.CoreApi
 {
-    class SwarmApi : ISwarmApi
+    internal class SwarmApi : ISwarmApi
     {
-        static ILog log = LogManager.GetLogger(typeof(SwarmApi));
-        IpfsEngine ipfs;
+        private static readonly ILog log = LogManager.GetLogger(typeof(SwarmApi));
+        private readonly IpfsEngine ipfs;
 
-        static MultiAddress[] defaultFilters = new MultiAddress[]
-        {
-        };
+        private static readonly MultiAddress[] defaultFilters = Array.Empty<MultiAddress>();
 
         public SwarmApi(IpfsEngine ipfs)
         {
@@ -67,7 +65,7 @@ namespace Ipfs.Engine.CoreApi
             {
                 var json = await ipfs.Config.GetAsync("Swarm.AddrFilters", cancel).ConfigureAwait(false);
                 if (json == null)
-                    return new MultiAddress[0];
+                    return Array.Empty<MultiAddress>();
 
                 return json
                     .Select(a => MultiAddress.TryCreate((string)a))

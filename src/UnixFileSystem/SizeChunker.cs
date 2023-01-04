@@ -41,15 +41,15 @@ namespace Ipfs.Engine.UnixFileSystem
         ///    the sequence of file system nodes of the added data blocks.
         /// </returns>
         public async Task<List<FileSystemNode>> ChunkAsync(
-            Stream stream, 
+            Stream stream,
             string name,
-            AddFileOptions options, 
+            AddFileOptions options,
             IBlockApi blockService,
             KeyChain keyChain,
             CancellationToken cancel)
         {
             var protecting = !string.IsNullOrWhiteSpace(options.ProtectionKey);
-            var nodes = new List<FileSystemNode> ();
+            var nodes = new List<FileSystemNode>();
             var chunkSize = options.ChunkSize;
             var chunk = new byte[chunkSize];
             var chunking = true;
@@ -61,7 +61,7 @@ namespace Ipfs.Engine.UnixFileSystem
                 int length = 0;
                 while (length < chunkSize)
                 {
-                    var n = await stream.ReadAsync(chunk, length, chunkSize - length, cancel).ConfigureAwait(false);
+                    var n = await stream.ReadAsync(chunk.AsMemory(length, chunkSize - length), cancel).ConfigureAwait(false);
                     if (n < 1)
                     {
                         chunking = false;
@@ -78,14 +78,12 @@ namespace Ipfs.Engine.UnixFileSystem
                     break;
                 }
 
-                if (options.Progress != null)
+                options.Progress?.Report(new TransferProgress
                 {
-                    options.Progress.Report(new TransferProgress
-                    {
-                        Name = name,
-                        Bytes = totalBytes
-                    });
-                }
+                    Name = name,
+                    Bytes = totalBytes
+                });
+
                 // if protected data, then get CMS structure.
                 if (protecting)
                 {

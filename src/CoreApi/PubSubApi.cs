@@ -10,7 +10,7 @@ namespace Ipfs.Engine.CoreApi
 {
     internal class PubSubApi : IPubSubApi
     {
-        private IpfsEngine ipfs;
+        private readonly IpfsEngine ipfs;
 
         public PubSubApi(IpfsEngine ipfs)
         {

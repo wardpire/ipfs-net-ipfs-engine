@@ -7,9 +7,9 @@ using Ipfs.CoreApi;
 
 namespace Ipfs.Engine.CoreApi
 {
-    class BitswapApi : IBitswapApi
+    internal class BitswapApi : IBitswapApi
     {
-        IpfsEngine ipfs;
+        private readonly IpfsEngine ipfs;
 
         public BitswapApi(IpfsEngine ipfs)
         {

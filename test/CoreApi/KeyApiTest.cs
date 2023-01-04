@@ -116,7 +116,7 @@ Rw==
             Assert.AreEqual("QmXFX2P5ammdmXQgfqGkfswtEVFsZUJ5KeHRXQYCTdiTAb", key.Id);
 
             var keychain = await ipfs.KeyChainAsync();
-            var pubkey = await keychain.GetPublicKeyAsync("jsipfs");
+            var pubkey = await keychain.GetIpfsPublicKeyAsync("jsipfs");
             Assert.AreEqual(spki, pubkey);
         }
 
@@ -190,7 +190,7 @@ MIIFDTA/BgkqhkiG9w0BBQ0wMjAaBgkqhkiG9w0BBQwwDQQILdGJynKmkrMCAWQw
                 var keychain = await ipfs.KeyChainAsync();
                 var priv = await keychain.GetPrivateKeyAsync(name);
                 Assert.IsNotNull(priv);
-                var pub = await keychain.GetPublicKeyAsync(name);
+                var pub = await keychain.GetIpfsPublicKeyAsync(name);
                 Assert.IsNotNull(pub);
 
                 // Verify key can be used as peer ID.
@@ -344,7 +344,7 @@ IyIjAQyiOZZ5e8ozKAp5QFjQ/StM1uInn0v7Oi3vQRfbOOXcLXJL
                 var keychain = await ipfs.KeyChainAsync();
                 var priv = await keychain.GetPrivateKeyAsync(name);
                 Assert.IsNotNull(priv);
-                var pub = await keychain.GetPublicKeyAsync(name);
+                var pub = await keychain.GetIpfsPublicKeyAsync(name);
                 Assert.IsNotNull(pub);
 
                 // Verify key can be used as peer ID.

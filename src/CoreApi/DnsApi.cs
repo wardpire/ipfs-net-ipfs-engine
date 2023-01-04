@@ -12,7 +12,7 @@ namespace Ipfs.Engine.CoreApi
 {
     internal class DnsApi : IDnsApi
     {
-        private IpfsEngine ipfs;
+        private readonly IpfsEngine ipfs;
 
         public DnsApi(IpfsEngine ipfs)
         {

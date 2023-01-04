@@ -8,9 +8,9 @@ using System.Reflection;
 
 namespace Ipfs.Engine.CoreApi
 {
-    class GenericApi : IGenericApi
+    internal class GenericApi : IGenericApi
     {
-        IpfsEngine ipfs;
+        private readonly IpfsEngine ipfs;
 
         public GenericApi(IpfsEngine ipfs)
         {
@@ -49,7 +49,8 @@ namespace Ipfs.Engine.CoreApi
                     return path;
             }
 
-            if (path.StartsWith("/ipfs/")) {
+            if (path.StartsWith("/ipfs/"))
+            {
                 path = path.Remove(0, 6);
             }
 

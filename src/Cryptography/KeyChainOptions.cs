@@ -61,7 +61,7 @@ namespace Ipfs.Engine.Cryptography
         /// <value>
         ///   Defaults to 10,000.
         /// </value>
-        public int IterationCount { get; set; } =  10 * 1000;
+        public int IterationCount { get; set; } = 10 * 1024;
 
         /// <summary>
         ///   Some random data for the <see cref="Hash"/>.
@@ -76,5 +76,5 @@ namespace Ipfs.Engine.Cryptography
         ///   One of the known <see cref="Ipfs.Registry.HashingAlgorithm"/> names. Defaults to "sha2-512".
         /// </value>
         public string Hash { get; set; } = "sha2-512";
-  }
+    }
 }

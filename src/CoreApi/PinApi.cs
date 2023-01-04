@@ -8,22 +8,22 @@ using Ipfs.CoreApi;
 
 namespace Ipfs.Engine.CoreApi
 {
-    class Pin
+    internal class Pin
     {
         public Cid Id;
     }
 
-    class PinApi : IPinApi
+    internal class PinApi : IPinApi
     {
-        IpfsEngine ipfs;
-        FileStore<Cid, Pin> store;
+        private readonly IpfsEngine ipfs;
+        private FileStore<Cid, Pin> store;
 
         public PinApi(IpfsEngine ipfs)
         {
             this.ipfs = ipfs;
         }
 
-        FileStore<Cid, Pin> Store
+        private FileStore<Cid, Pin> Store
         {
             get
             {
@@ -109,7 +109,7 @@ namespace Ipfs.Engine.CoreApi
                                 todos.Push(link.Id);
                             }
                         }
-                        catch (Exception)
+                        catch
                         {
                             // ignore if current is not an objcet.
                         }

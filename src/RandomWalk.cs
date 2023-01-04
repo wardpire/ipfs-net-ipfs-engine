@@ -19,7 +19,7 @@ namespace Ipfs.Engine
     /// </remarks>
     public class RandomWalk : IService
     {
-        private static ILog log = LogManager.GetLogger(typeof(RandomWalk));
+        private static readonly ILog log = LogManager.GetLogger(typeof(RandomWalk));
         private CancellationTokenSource cancel;
 
         /// <summary>

@@ -2,11 +2,14 @@
 using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Cms;
 using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.X509;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.ConstrainedExecution;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -38,40 +41,48 @@ namespace Ipfs.Engine.Cryptography
         ///   is used to digitally sign, digest, authenticate, and/or encrypt
         ///   arbitrary message content.
         /// </remarks>
-        public async Task<byte[]> CreateProtectedDataAsync(
-            string keyName,
-            byte[] plainText,
-            CancellationToken cancel = default)
+        public async Task<byte[]> CreateProtectedDataAsync(string keyName, byte[] plainText, CancellationToken cancel = default)
         {
             // Identify the recipient by the Subject Key ID.
 
-            // TODO: Need a method to just the get BC public key
+            // TODO: Need a method to just get the BC public key
             // Get the BC key pair for the named key.
             var ekey = await Store.TryGetAsync(keyName, cancel).ConfigureAwait(false);
             if (ekey == null)
-                throw new KeyNotFoundException($"The key '{keyName}' does not exist.");
-            AsymmetricCipherKeyPair kp = null;
-            UseEncryptedKey(ekey, key =>
             {
-                kp = this.GetKeyPairFromPrivateKey(key);
-            });
+                throw new KeyNotFoundException($"The key '{keyName}' does not exist.");
+            }
+
+            AsymmetricCipherKeyPair kp = null;
+            UseEncryptedKey(ekey, key => kp = this.GetKeyPairFromPrivateKey(key));
 
             // Add recipient type based on key type.
             var edGen = new CmsEnvelopedDataGenerator();
             if (kp.Private is RsaPrivateCrtKeyParameters)
             {
-                edGen.AddKeyTransRecipient(kp.Public, Base58.Decode(ekey.Id));
+                // get certificate
+                var cert = await CreateBCCertificateAsync(keyName, cancel).ConfigureAwait(false);
+
+                edGen.AddKeyTransRecipient(cert);
             }
             else if (kp.Private is ECPrivateKeyParameters)
             {
+                // get certificate
                 var cert = await CreateBCCertificateAsync(keyName, cancel).ConfigureAwait(false);
                 edGen.AddKeyAgreementRecipient(
                     agreementAlgorithm: CmsEnvelopedDataGenerator.ECDHSha1Kdf,
                     senderPrivateKey: kp.Private,
                     senderPublicKey: kp.Public,
                     recipientCert: cert,
-                    cekWrapAlgorithm: CmsEnvelopedDataGenerator.Aes256Wrap
-                    );
+                    cekWrapAlgorithm: CmsEnvelopedDataGenerator.Aes256Wrap);
+            }
+            else if (kp.Private is Ed25519PrivateKeyParameters)
+            {
+                //
+                var sharedKey = await GetSharedKeyAsync(cancel);
+                edGen.AddKekRecipient("AES256",
+                    new KeyParameter(sharedKey),
+                    Base58.Decode(ekey.Id));
             }
             else
             {
@@ -79,9 +90,7 @@ namespace Ipfs.Engine.Cryptography
             }
 
             // Generate the protected data.
-            var ed = edGen.Generate(
-                new CmsProcessableByteArray(plainText),
-                CmsEnvelopedDataGenerator.Aes256Cbc);
+            var ed = edGen.Generate(new CmsProcessableByteArray(plainText), CmsEnvelopedDataGenerator.Aes256Cbc);
             return ed.GetEncoded();
         }
 
@@ -112,28 +121,48 @@ namespace Ipfs.Engine.Cryptography
             byte[] cipherText,
             CancellationToken cancel = default)
         {
-            var cms = new CmsEnvelopedDataParser(cipherText);
+            // attempt
+            try
+            {
+                var cms = new CmsEnvelopedDataParser(cipherText);
 
-            // Find a recipient whose key we hold. We only deal with recipient names
-            // issued by ipfs (O=ipfs, OU=keystore).
-            var knownKeys = (await ListAsync(cancel).ConfigureAwait(false)).ToArray();
-            var recipient = cms
-                .GetRecipientInfos()
-                .GetRecipients()
-                .OfType<RecipientInformation>()
-                .Select(ri =>
+                // Find a recipient whose key we hold. We only deal with recipient names
+                // issued by ipfs (O=ipfs, OU=keystore).
+                var knownKeys = (await ListAsync(cancel).ConfigureAwait(false)).ToArray();
+                var recipient = cms
+                    .GetRecipientInfos()
+                    .GetRecipients()
+                    .OfType<RecipientInformation>()
+                    .Select(ri =>
+                    {
+                        var kid = GetKeyId(ri);
+                        var key = Array.Find(knownKeys, k => k.Id == kid);
+                        return new { recipient = ri, key };
+                    })
+                    .FirstOrDefault(r => r.key != null);
+
+                if (recipient == null)
                 {
-                    var kid = GetKeyId(ri);
-                    var key = knownKeys.FirstOrDefault(k => k.Id == kid);
-                    return new { recipient = ri, key = key };
-                })
-                .FirstOrDefault(r => r.key != null);
-            if (recipient == null)
-                throw new KeyNotFoundException("The required decryption key is missing.");
+                    //
+                    var cmsRecipients = cms.GetRecipientInfos().GetRecipients().OfType<RecipientInformation>();
+                    var localRecipient = cmsRecipients?.FirstOrDefault();
 
-            // Decrypt the contents.
-            var decryptionKey = await GetPrivateKeyAsync(recipient.key.Name).ConfigureAwait(false);
-            return recipient.recipient.GetContent(decryptionKey);
+                    // get shared key
+                    var sharedKey = await GetSharedKeyAsync(cancel);
+
+                    return localRecipient.GetContent(new KeyParameter(sharedKey));
+                }
+                else
+                {
+                    // Decrypt the contents.
+                    var decryptionKey = await GetPrivateKeyAsync(recipient.key.Name).ConfigureAwait(false);
+                    return recipient.recipient.GetContent(decryptionKey);
+                }
+            }
+            catch (Exception)
+            {
+                throw new KeyNotFoundException("The required decryption key is missing.");
+            }
         }
 
         /// <summary>
@@ -150,7 +179,7 @@ namespace Ipfs.Engine.Cryptography
         ///   The key ID is either the Subject Key Identifier (preferred) or the
         ///   issuer's distinguished name with the form "CN=&lt;kid>,OU=keystore,O=ipfs".
         /// </remarks>
-        MultiHash GetKeyId(RecipientInformation ri)
+        private MultiHash GetKeyId(RecipientInformation ri)
         {
             // Any errors are simply ignored.
             try
@@ -161,8 +190,7 @@ namespace Ipfs.Engine.Cryptography
 
                 // Issuer is CN=<kid>,OU=keystore,O=ipfs
                 var issuer = ri.RecipientID.Issuer;
-                if (issuer != null
-                    && issuer.GetValueList(X509Name.OU).Contains("keystore")
+                if (issuer?.GetValueList(X509Name.OU).Contains("keystore") == true
                     && issuer.GetValueList(X509Name.O).Contains("ipfs"))
                 {
                     var cn = issuer.GetValueList(X509Name.CN)[0] as string;

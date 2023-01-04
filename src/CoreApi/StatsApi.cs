@@ -11,9 +11,9 @@ using PeerTalk;
 
 namespace Ipfs.Engine.CoreApi
 {
-    class StatsApi : IStatsApi
+    internal class StatsApi : IStatsApi
     {
-        IpfsEngine ipfs;
+        private readonly IpfsEngine ipfs;
 
         public StatsApi(IpfsEngine ipfs)
         {

@@ -7,9 +7,9 @@ using Ipfs.CoreApi;
 
 namespace Ipfs.Engine.CoreApi
 {
-    class DhtApi : IDhtApi
+    internal class DhtApi : IDhtApi
     {
-        IpfsEngine ipfs;
+        private readonly IpfsEngine ipfs;
 
         public DhtApi(IpfsEngine ipfs)
         {
@@ -22,7 +22,7 @@ namespace Ipfs.Engine.CoreApi
             return await dht.FindPeerAsync(id, cancel).ConfigureAwait(false);
         }
 
-        public async Task<IEnumerable<Peer>> FindProvidersAsync(Cid id, int limit = 20, Action<Peer> providerFound = null, CancellationToken cancel = default)
+        public async Task<IEnumerable<Peer>> FindProvidersAsync(Cid id, int limit = 21, Action<Peer> providerFound = null, CancellationToken cancel = default)
         {
             var dht = await ipfs.DhtService.ConfigureAwait(false);
             return await dht.FindProvidersAsync(id, limit, providerFound, cancel).ConfigureAwait(false);
@@ -39,12 +39,12 @@ namespace Ipfs.Engine.CoreApi
             throw new NotImplementedException();
         }
 
-        public Task PutAsync(byte[] key, out byte[] value, CancellationToken cancel = default)
+        public Task<bool> TryGetAsync(byte[] key, out byte[] value, CancellationToken cancel = default)
         {
             throw new NotImplementedException();
         }
 
-        public Task<bool> TryGetAsync(byte[] key, out byte[] value, CancellationToken cancel = default)
+        public Task PutAsync(byte[] key, out byte[] value, CancellationToken cancel = default)
         {
             throw new NotImplementedException();
         }

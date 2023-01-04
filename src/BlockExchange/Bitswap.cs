@@ -17,10 +17,10 @@ namespace Ipfs.Engine.BlockExchange
     /// </summary>
     public class Bitswap : IService
     {
-        static ILog log = LogManager.GetLogger(typeof(Bitswap));
+        private static readonly ILog log = LogManager.GetLogger(typeof(Bitswap));
 
-        ConcurrentDictionary<Cid, WantedBlock> wants = new ConcurrentDictionary<Cid, WantedBlock>();
-        ConcurrentDictionary<Peer, BitswapLedger> peerLedgers = new ConcurrentDictionary<Peer, BitswapLedger>();
+        private readonly ConcurrentDictionary<Cid, WantedBlock> wants = new();
+        private readonly ConcurrentDictionary<Peer, BitswapLedger> peerLedgers = new();
 
         /// <summary>
         ///   The supported bitswap protocols.
@@ -33,22 +33,22 @@ namespace Ipfs.Engine.BlockExchange
         /// <summary>
         ///   The number of blocks sent by other peers.
         /// </summary>
-        ulong BlocksReceived;
+        private ulong BlocksReceived;
 
         /// <summary>
         ///   The number of bytes sent by other peers.
         /// </summary>
-        ulong DataReceived;
+        private ulong DataReceived;
 
         /// <summary>
         ///   The number of blocks sent to other peers.
         /// </summary>
-        ulong BlocksSent;
+        private ulong BlocksSent;
 
         /// <summary>
         ///   The number of bytes sent to other peers.
         /// </summary>
-        ulong DataSent;
+        private ulong DataSent;
 
         /// <summary>
         ///   The number of duplicate blocks sent by other peers.
@@ -57,7 +57,7 @@ namespace Ipfs.Engine.BlockExchange
         ///   A duplicate block is a block that is already stored in the
         ///   local repository.
         /// </remarks>
-        ulong DupBlksReceived;
+        private ulong DupBlksReceived;
 
         /// <summary>
         ///   The number of duplicate bytes sent by other peers.
@@ -66,7 +66,7 @@ namespace Ipfs.Engine.BlockExchange
         ///   A duplicate block is a block that is already stored in the
         ///   local repository.
         /// </remarks>
-        ulong DupDataReceived;
+        private ulong DupDataReceived;
 
         /// <summary>
         ///   Creates a new instance of the <see cref="Bitswap"/> class.
@@ -161,10 +161,11 @@ namespace Ipfs.Engine.BlockExchange
         // When a connection is established
         // (1) Send the local peer's want list to the remote
 #pragma warning disable VSTHRD100 // Avoid async void methods
-        async void Swarm_ConnectionEstablished(object sender, PeerConnection connection)
+
+        private async void Swarm_ConnectionEstablished(object sender, PeerConnection connection)
 #pragma warning restore VSTHRD100 // Avoid async void methods
         {
-            if (wants.Count == 0)
+            if (wants.IsEmpty)
             {
                 return;
             }
@@ -253,13 +254,13 @@ namespace Ipfs.Engine.BlockExchange
             var tsc = new TaskCompletionSource<IDataBlock>();
             var want = wants.AddOrUpdate(
                 id,
-                (key) => new WantedBlock
+                (_) => new WantedBlock
                 {
                     Id = id,
                     Consumers = new List<TaskCompletionSource<IDataBlock>> { tsc },
                     Peers = new List<MultiHash> { peer }
                 },
-                (key, block) =>
+                (_, block) =>
                 {
                     block.Peers.Add(peer);
                     block.Consumers.Add(tsc);
@@ -376,7 +377,7 @@ namespace Ipfs.Engine.BlockExchange
                     BlocksExchanged = 1,
                     DataReceived = (ulong)block.LongLength
                 },
-                (peer, ledger) =>
+                (_, ledger) =>
                 {
                     ++ledger.BlocksExchanged;
                     DataReceived += (ulong)block.LongLength;
@@ -427,7 +428,7 @@ namespace Ipfs.Engine.BlockExchange
                     BlocksExchanged = 1,
                     DataSent = (ulong)block.Size
                 },
-                (peer, ledger) =>
+                (_, ledger) =>
                 {
                     ++ledger.BlocksExchanged;
                     DataSent += (ulong)block.Size;
@@ -468,7 +469,7 @@ namespace Ipfs.Engine.BlockExchange
         /// <summary>
         ///   Send our want list to the connected peers.
         /// </summary>
-        async Task SendWantListToAllAsync(IEnumerable<WantedBlock> wants, bool full)
+        private async Task SendWantListToAllAsync(IEnumerable<WantedBlock> wants, bool full)
         {
             if (Swarm == null)
                 return;
@@ -480,11 +481,11 @@ namespace Ipfs.Engine.BlockExchange
                     .Select(p => SendWantListAsync(p, wants, full))
                     .ToArray();
                 if (log.IsDebugEnabled)
-                    log.Debug($"Spamming {tasks.Count()} connected peers");
+                    log.Debug($"Spamming {tasks.Length} connected peers");
                 await Task.WhenAll(tasks).ConfigureAwait(false);
 
                 if (log.IsDebugEnabled)
-                    log.Debug($"Spam {tasks.Count()} connected peers done");
+                    log.Debug($"Spam {tasks.Length} connected peers done");
             }
             catch (Exception e)
             {
@@ -492,7 +493,7 @@ namespace Ipfs.Engine.BlockExchange
             }
         }
 
-        async Task SendWantListAsync(Peer peer, IEnumerable<WantedBlock> wants, bool full)
+        private async Task SendWantListAsync(Peer peer, IEnumerable<WantedBlock> wants, bool full)
         {
             log.Debug($"sending want list to {peer}");
 

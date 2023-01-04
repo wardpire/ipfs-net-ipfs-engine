@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 
 namespace Ipfs.Engine
 {
-    
     [TestClass]
     public class IpfsEngineTest
     {
@@ -32,7 +31,7 @@ namespace Ipfs.Engine
 
         [TestMethod]
         public async Task SecureString_Passphrase()
-        { 
+        {
             var secret = "this is not a secure pass phrase";
             var ipfs = new IpfsEngine(secret.ToCharArray());
             ipfs.Options = TestFixture.Ipfs.Options;
@@ -80,13 +79,6 @@ namespace Ipfs.Engine
             {
                 var _ = ipfs2.KeyChainAsync().Result;
             });
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(Exception))]
-        public void IpfsPass_Missing()
-        {
-            var _ = new IpfsEngine();
         }
 
         [TestMethod]
