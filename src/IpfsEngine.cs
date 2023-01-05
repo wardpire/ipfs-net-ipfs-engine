@@ -463,7 +463,10 @@ namespace Ipfs.Engine
 
             var autodialer = new AutoDialer(swarm)
             {
-                MinConnections = Options.Swarm.MinConnections
+                MinConnections = Options.Swarm.MinConnections,
+                MaxConnections = Options.Swarm.MaxConnections > 16
+                                    ? Options.Swarm.MaxConnections
+                                    : 21
             };
 #pragma warning disable CS1998
             stopTasks.Add(async () => autodialer.Dispose());

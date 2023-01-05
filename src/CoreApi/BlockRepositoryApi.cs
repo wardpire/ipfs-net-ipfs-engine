@@ -40,8 +40,8 @@ namespace Ipfs.Engine.CoreApi
             if (OperatingSystem.IsWindows() || OperatingSystem.IsLinux())
             {
                 DriveInfo[] allDrives = DriveInfo.GetDrives();
-                var totalSize = allDrives.Sum(d => d.TotalSize); // since most devices are single drive
-                maxStorage = Convert.ToUInt64(totalSize * 0.35); // use 30% of total storage
+                var totalSize = allDrives.Sum(d => d.AvailableFreeSpace); // since most devices are single drive
+                maxStorage = Convert.ToUInt64(totalSize * 0.45); // use 45% of total storage
             }
 
             var data = new RepositoryData

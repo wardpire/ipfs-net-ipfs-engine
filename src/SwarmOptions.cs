@@ -46,5 +46,23 @@ namespace Ipfs.Engine
         ///   </para>
         /// </remarks>
         public int MinConnections { get; set; } = 8;
+
+        
+        /// <summary>
+        ///   The high water mark for peer connections.
+        /// </summary>
+        /// <value>
+        ///   Defaults to 0.
+        /// </value>
+        /// <remarks>
+        ///   The <see cref="PeerTalk.AutoDialer"/> is used to maintain at
+        ///   least this number of connections.
+        ///   <para>
+        ///   This is an opt-feature.  The value must be positive to enable it.
+        ///   </para>
+        /// </remarks>
+        public int MaxConnections { get; set; } 
+
+
     }
 }
