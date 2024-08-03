@@ -34,7 +34,7 @@ namespace Ipfs.Engine.CoreApi
             var strings = addrs.Select(a => a.ToString());
             await ipfs.Config.SetAsync("Swarm.AddrFilters", JToken.FromObject(strings), cancel).ConfigureAwait(false);
 
-            (await ipfs.SwarmService.ConfigureAwait(false)).AllowList.Add(address);
+            (await ipfs.SwarmService.ConfigureAwait(false)).WhiteList.Add(address);
 
             return address;
         }
@@ -95,7 +95,7 @@ namespace Ipfs.Engine.CoreApi
             var strings = addrs.Select(a => a.ToString());
             await ipfs.Config.SetAsync("Swarm.AddrFilters", JToken.FromObject(strings), cancel).ConfigureAwait(false);
 
-            (await ipfs.SwarmService.ConfigureAwait(false)).AllowList.Remove(address);
+            (await ipfs.SwarmService.ConfigureAwait(false)).WhiteList.Remove(address);
 
             return address;
         }

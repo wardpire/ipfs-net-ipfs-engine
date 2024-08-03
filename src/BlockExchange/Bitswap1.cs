@@ -102,7 +102,7 @@ namespace Ipfs.Engine.BlockExchange
                 }
 
                 // Send block to remote.
-                using (var stream = await Bitswap.Swarm.DialAsync(remotePeer, this, cancel).ConfigureAwait(false))
+                using (var stream = await Bitswap.Swarm.DialAsync(remotePeer, this.ToString()).ConfigureAwait(false))
                 {
                     await SendAsync(stream, block, cancel).ConfigureAwait(false);
                 }

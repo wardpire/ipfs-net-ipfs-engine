@@ -140,28 +140,6 @@ namespace Ipfs.Engine
                 log.Debug("Built local peer");
                 return localPeer;
             });
-            PeerListService = new AsyncLazy<PeerList>(async () =>
-            {
-                log.Debug("Building peerlist service");
-                var peer = await LocalPeer.ConfigureAwait(false);
-                var peerlist = new PeerList(peer);
-                log.Debug("Built swarm service");
-                return peerlist;
-            });
-            SwitchboardService = new AsyncLazy<Switchboard>(async () =>
-            {
-                log.Debug("Building switchboard service");
-                
-                var peer = await LocalPeer.ConfigureAwait(false);
-                var peerlist = await PeerListService.ConfigureAwait(false);
-                var keyChain = await KeyChainAsync().ConfigureAwait(false);
-                var self = await keyChain.GetPrivateKeyAsync("self").ConfigureAwait(false);
-                var key = PeerTalk.Cryptography.Key.CreatePrivateKey(self);
-                var NetworkProtector = Options.Swarm.PrivateNetworkKey == null
-                        ? null
-                        : new Psk1Protector { Key = Options.Swarm.PrivateNetworkKey };
-                return new Switchboard(peer, key, peerlist, NetworkProtector);
-            });
             SwarmService = new AsyncLazy<Swarm>(async () =>
             {
                 log.Debug("Building swarm service");
@@ -178,13 +156,16 @@ namespace Ipfs.Engine
                     }
                 }
                 var peer = await LocalPeer.ConfigureAwait(false);
-                var peerlist = await PeerListService.ConfigureAwait(false);
                 var keyChain = await KeyChainAsync().ConfigureAwait(false);
                 var self = await keyChain.GetPrivateKeyAsync("self").ConfigureAwait(false);
-
-                var switchboard = await SwitchboardService.ConfigureAwait(false);
-                var dht = await DhtService.ConfigureAwait(false);
-                var swarm = new Swarm(peer, peerlist, switchboard, dht);
+                var swarm = new Swarm
+                {
+                    LocalPeer = peer,
+                    LocalPeerKey = PeerTalk.Cryptography.Key.CreatePrivateKey(self),
+                    NetworkProtector = Options.Swarm.PrivateNetworkKey == null
+                        ? null
+                        : new Psk1Protector { Key = Options.Swarm.PrivateNetworkKey }
+                };
                 if (Options.Swarm.PrivateNetworkKey != null)
                     log.Debug($"Private network {Options.Swarm.PrivateNetworkKey.Fingerprint().ToHexString()}");
 
@@ -205,10 +186,11 @@ namespace Ipfs.Engine
             DhtService = new AsyncLazy<PeerTalk.Routing.Dht1>(async () =>
             {
                 log.Debug("Building DHT service");
-                var switchboard = await SwitchboardService.ConfigureAwait(false);
-
-                var dht = new PeerTalk.Routing.Dht1(await LocalPeer.ConfigureAwait(false), await PeerListService.ConfigureAwait(false), switchboard)
-                ;
+                var dht = new PeerTalk.Routing.Dht1
+                {
+                    Swarm = await SwarmService.ConfigureAwait(false)
+                };
+                dht.Swarm.Router = dht;
                 log.Debug("Built DHT service");
                 return dht;
             });
@@ -406,16 +388,13 @@ namespace Ipfs.Engine
             var localPeer = await LocalPeer.ConfigureAwait(false);
             log.Debug("starting " + localPeer.Id);
 
-            var switchboard = await SwitchboardService.ConfigureAwait(false);
-            stopTasks.Add(async () =>
-            {
-                await switchboard.StopAsync().ConfigureAwait(false);
-            });
-            await switchboard.StartAsync().ConfigureAwait(false);
-
-
             // Everybody needs the swarm.
             var swarm = await SwarmService.ConfigureAwait(false);
+            stopTasks.Add(async () =>
+            {
+                await swarm.StopAsync().ConfigureAwait(false);
+            });
+            await swarm.StartAsync().ConfigureAwait(false);
 
             stopTasks.Add(swarm.StopAsync);
             await swarm.StartAsync().ConfigureAwait(false);
@@ -463,7 +442,7 @@ namespace Ipfs.Engine
             {
                 try
                 {
-                    await switchboard.StartListeningAsync(a).ConfigureAwait(false);
+                    await swarm.StartListeningAsync(a).ConfigureAwait(false);
                     ++numberListeners;
                 }
                 catch (Exception e)
@@ -641,14 +620,6 @@ namespace Ipfs.Engine
             }
         }
 
-        private AsyncLazy<PeerTalk.PeerList> PeerListService { get; set; }
-
-
-        /// <summary>
-        ///   Manages communication with other peers.
-        /// </summary>
-        public AsyncLazy<Switchboard> SwitchboardService { get; private set; }
-
         /// <summary>
         ///   Manages communication with other peers.
         /// </summary>
@@ -680,21 +651,21 @@ namespace Ipfs.Engine
         ///   Fired when a peer is discovered.
         /// </summary>
         /// <param name="sender"></param>
-        /// <param name="address">Peer address discovered</param>
+        /// <param name="peer"></param>
         /// <remarks>
         ///   Registers the peer with the <see cref="SwarmService"/>.
         /// </remarks>
-        private async void OnPeerDiscovered(object sender, Peer peer)
+        async void OnPeerDiscovered(object sender, Peer peer)
 #pragma warning restore VSTHRD100 // Avoid async void methods
         {
             try
             {
                 var swarm = await SwarmService.ConfigureAwait(false);
-                swarm.RegisterPeer(address.PeerId, new[] { address });
+                swarm.RegisterPeer(peer);
             }
             catch (Exception ex)
             {
-                log.Warn("failed to register peer " + address, ex);
+                log.Warn("failed to register peer " + peer, ex);
                 // eat it, nothing we can do.
             }
         }

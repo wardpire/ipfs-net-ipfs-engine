@@ -18,12 +18,10 @@ namespace Ipfs.Engine.BlockExchange
     public class Bitswap : IService
     {
         static ILog log = LogManager.GetLogger(typeof(Bitswap));
-        static HashSet<MultiHash> unsupportedPeers = new HashSet<MultiHash>();
 
         private readonly ConcurrentDictionary<Cid, WantedBlock> wants = new();
         private readonly ConcurrentDictionary<Peer, BitswapLedger> peerLedgers = new();
 
-        
         /// <summary>
         ///   The supported bitswap protocols.
         /// </summary>
@@ -497,29 +495,27 @@ namespace Ipfs.Engine.BlockExchange
 
         private async Task SendWantListAsync(Peer peer, IEnumerable<WantedBlock> wants, bool full)
         {
-            if(unsupportedPeers.Contains(peer.Id))
-            {
-                //Skip trying to swap with a peer that doesn't speak our bitswap
-                return;
-            }
-
-            log.Debug($"sending want list to {peer}: {String.Join(", ", wants.Select(w => w.Id.Hash.ToString()).ToArray())}");
+            log.Debug($"sending want list to {peer}");
 
             // Send the want list to the peer on any bitswap protocol
             // that it supports.
-            try
+            foreach (var protocol in Protocols)
             {
-                using (var stream = await Swarm.DialAsync(peer, Protocols).ConfigureAwait(false))
+                try
                 {
-                    await stream.Protocol.SendWantsAsync(stream, wants, full: full).ConfigureAwait(false);
+                    using (var stream = await Swarm.DialAsync(peer, protocol.ToString()).ConfigureAwait(false))
+                    {
+                        await protocol.SendWantsAsync(stream, wants, full: full).ConfigureAwait(false);
+                    }
+                    return;
+                }
+                catch (Exception)
+                {
+                    log.Debug($"{peer} refused {protocol}");
                 }
             }
-            //FIXME: This should be a specific exception type
-            catch (Exception)
-            {
-                log.Warn($"{peer} does not support any bitswap protocol");
-                unsupportedPeers.Add(peer.Id);
-            }
+
+            log.Warn($"{peer} does not support any bitswap protocol");
         }
     }
 }

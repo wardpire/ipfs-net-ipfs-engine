@@ -14,11 +14,11 @@ namespace Ipfs.Engine.CoreApi
     {
         private static JObject defaultConfiguration = JObject.Parse(@"{
   ""Addresses"": {
-    ""API"": ""/ip4/127.0.0.1/tcp/5002"",
-    ""Gateway"": ""/ip4/127.0.0.1/tcp/8081"",
+    ""API"": ""/ip4/127.0.0.1/tcp/5001"",
+    ""Gateway"": ""/ip4/127.0.0.1/tcp/8080"",
     ""Swarm"": [
-      ""/ip4/0.0.0.0/tcp/4002"",
-      ""/ip6/::/tcp/4002""
+      ""/ip4/0.0.0.0/tcp/4001"",
+      ""/ip6/::/tcp/4001""
     ]
   },
 }");
