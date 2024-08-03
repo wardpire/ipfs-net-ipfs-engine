@@ -37,7 +37,7 @@ namespace Ipfs.Engine.BlockExchange
             Stream stream,
             IEnumerable<WantedBlock> wants,
             bool full = true,
-            CancellationToken cancel = default(CancellationToken)
+            CancellationToken cancel = default
         );
     }
 }

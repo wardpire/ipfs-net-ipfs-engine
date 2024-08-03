@@ -12,16 +12,16 @@ using System.Globalization;
 
 namespace Ipfs.Engine.CoreApi
 {
-    class BlockRepositoryApi : IBlockRepositoryApi
+    internal class BlockRepositoryApi : IBlockRepositoryApi
     {
-        IpfsEngine ipfs;
+        private readonly IpfsEngine ipfs;
 
         public BlockRepositoryApi(IpfsEngine ipfs)
         {
             this.ipfs = ipfs;
         }
 
-        public async Task RemoveGarbageAsync(CancellationToken cancel = default(CancellationToken))
+        public async Task RemoveGarbageAsync(CancellationToken cancel = default)
         {
             var blockApi = (BlockApi)ipfs.Block;
             var pinApi = (PinApi)ipfs.Pin;
@@ -34,13 +34,21 @@ namespace Ipfs.Engine.CoreApi
             }
         }
 
-        public async Task<RepositoryData> StatisticsAsync(CancellationToken cancel = default(CancellationToken))
+        public async Task<RepositoryData> StatisticsAsync(CancellationToken cancel = default)
         {
+            ulong maxStorage = 10000000000;
+            if (OperatingSystem.IsWindows() || OperatingSystem.IsLinux())
+            {
+                DriveInfo[] allDrives = DriveInfo.GetDrives();
+                var totalSize = allDrives.Sum(d => d.AvailableFreeSpace); // since most devices are single drive
+                maxStorage = Convert.ToUInt64(totalSize * 0.45); // use 45% of total storage
+            }
+
             var data = new RepositoryData
             {
                 RepoPath = Path.GetFullPath(ipfs.Options.Repository.Folder),
                 Version = await VersionAsync(cancel).ConfigureAwait(false),
-                StorageMax = 10000000000 // TODO: there is no storage max
+                StorageMax = maxStorage
             };
 
             var blockApi = (BlockApi)ipfs.Block;
@@ -49,19 +57,19 @@ namespace Ipfs.Engine.CoreApi
             return data;
         }
 
-        public Task VerifyAsync(CancellationToken cancel = default(CancellationToken))
+        public Task VerifyAsync(CancellationToken cancel = default)
         {
             throw new NotImplementedException();
         }
 
-        public Task<string> VersionAsync(CancellationToken cancel = default(CancellationToken))
+        public Task<string> VersionAsync(CancellationToken cancel = default)
         {
             return Task.FromResult(ipfs.MigrationManager
                 .CurrentVersion
                 .ToString(CultureInfo.InvariantCulture));
         }
 
-        void GetDirStats(string path, RepositoryData data, CancellationToken cancel)
+        private void GetDirStats(string path, RepositoryData data, CancellationToken cancel)
         {
             foreach (var file in Directory.EnumerateFiles(path))
             {
@@ -76,6 +84,5 @@ namespace Ipfs.Engine.CoreApi
                 GetDirStats(dir, data, cancel);
             }
         }
-
     }
 }

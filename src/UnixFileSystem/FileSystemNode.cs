@@ -43,7 +43,7 @@ namespace Ipfs.Engine.UnixFileSystem
         /// <value>
         ///   Relative to the containing directory. Defaults to "".
         /// </value>
-        public string Name { get; set; } = String.Empty;
+        public string Name { get; set; } = string.Empty;
 
         /// <summary>
         ///   The serialised DAG size.
@@ -55,7 +55,7 @@ namespace Ipfs.Engine.UnixFileSystem
         {
             return new FileSystemLink
             {
-                Name = String.IsNullOrWhiteSpace(name) ? Name : name,
+                Name = string.IsNullOrWhiteSpace(name) ? Name : name,
                 Id = Id,
                 Size = DagSize
             };

@@ -21,7 +21,7 @@ namespace Ipfs.Engine.UnixFileSystem
         Raw = 0,
 
         /// <summary>
-        ///   A directory of files. 
+        ///   A directory of files.
         /// </summary>
         Directory = 1,
 
@@ -31,17 +31,17 @@ namespace Ipfs.Engine.UnixFileSystem
         File = 2,
 
         /// <summary>
-        ///  Metadata (NYI) 
+        ///  Metadata (NYI)
         /// </summary>
         Metadata = 3,
 
         /// <summary>
-        ///  Symbolic link (NYI) 
+        ///  Symbolic link (NYI)
         /// </summary>
         Symlink = 4,
 
         /// <summary>
-        ///  NYI 
+        ///  NYI
         /// </summary>
         HAMTShard = 5
     };

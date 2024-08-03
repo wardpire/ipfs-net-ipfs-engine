@@ -24,20 +24,20 @@ using PeerTalk.Cryptography;
 namespace Ipfs.Engine
 {
     /// <summary>
-    ///   Implements the <see cref="Ipfs.CoreApi.ICoreApi">Core API</see> which makes it possible to create a decentralised and distributed 
+    ///   Implements the <see cref="Ipfs.CoreApi.ICoreApi">Core API</see> which makes it possible to create a decentralised and distributed
     ///   application without relying on an "IPFS daemon".
     /// </summary>
     /// <remarks>
-    ///   The engine should be used as a shared object in your program. It is thread safe (re-entrant) and conserves 
+    ///   The engine should be used as a shared object in your program. It is thread safe (re-entrant) and conserves
     ///   resources when only one instance is used.
     /// </remarks>
     public partial class IpfsEngine : ICoreApi, IService, IDisposable
     {
-        static ILog log = LogManager.GetLogger(typeof(IpfsEngine));
+        private static readonly ILog log = LogManager.GetLogger(typeof(IpfsEngine));
 
-        KeyChain keyChain;
-        SecureString passphrase;
-        ConcurrentBag<Func<Task>> stopTasks = new ConcurrentBag<Func<Task>>();
+        private KeyChain keyChain;
+        private SecureString passphrase;
+        private ConcurrentBag<Func<Task>> stopTasks = new();
 
         /// <summary>
         ///   Creates a new instance of the <see cref="IpfsEngine"/> class
@@ -49,8 +49,10 @@ namespace Ipfs.Engine
         public IpfsEngine()
         {
             var s = Environment.GetEnvironmentVariable("IPFS_PASS");
-            if (s == null)
+            if (string.IsNullOrWhiteSpace(s))
+            {
                 throw new Exception("The IPFS_PASS environement variable is missing.");
+            }
 
             passphrase = new SecureString();
             foreach (var c in s)
@@ -68,7 +70,7 @@ namespace Ipfs.Engine
         ///   The password used to access the keychain.
         /// </param>
         /// <remarks>
-        ///   A <b>SecureString</b> copy of the passphrase is made so that the array can be 
+        ///   A <b>SecureString</b> copy of the passphrase is made so that the array can be
         ///   zeroed out after the call.
         /// </remarks>
         public IpfsEngine(char[] passphrase)
@@ -97,8 +99,8 @@ namespace Ipfs.Engine
             Init();
         }
 
-        void Init()
-        { 
+        private void Init()
+        {
             // Init the core api inteface.
             Bitswap = new BitswapApi(this);
             Block = new BlockApi(this);
@@ -130,7 +132,7 @@ namespace Ipfs.Engine
                 var localPeer = new Peer
                 {
                     Id = self.Id,
-                    PublicKey = await keyChain.GetPublicKeyAsync("self").ConfigureAwait(false),
+                    PublicKey = await keyChain.GetIpfsPublicKeyAsync("self").ConfigureAwait(false),
                     ProtocolVersion = "ipfs/0.1.0"
                 };
                 var version = typeof(IpfsEngine).GetTypeInfo().Assembly.GetName().Version;
@@ -307,31 +309,33 @@ namespace Ipfs.Engine
         ///   A task that represents the asynchronous operation. The task's result is
         ///   the <see cref="KeyChain"/>.
         /// </returns>
-        public async Task<KeyChain> KeyChainAsync(CancellationToken cancel = default(CancellationToken))
+        public async Task<KeyChain> KeyChainAsync(CancellationToken cancel = default)
         {
             // TODO: this should be a LazyAsync property.
-            if (keyChain == null)
+            if (keyChain != null)
             {
-                lock (this)
-                {
-                    if (keyChain == null)
-                    {
-                        keyChain = new KeyChain(this)
-                        {
-                            Options = Options.KeyChain
-                        };
-                     }
-                }
-
-                await keyChain.SetPassphraseAsync(passphrase, cancel).ConfigureAwait(false);
-                
-                // Maybe create "self" key, this is the local peer's id.
-                var self = await keyChain.FindKeyByNameAsync("self", cancel).ConfigureAwait(false);
-                if (self == null)
-                {
-                    self = await keyChain.CreateAsync("self", null, 0, cancel).ConfigureAwait(false);
-                }
+                return keyChain;
             }
+
+            lock (_lockObject)
+            {
+                keyChain ??= new KeyChain(this)
+                {
+                    Options = Options.KeyChain
+                };
+            }
+
+            await keyChain.SetPassphraseAsync(passphrase, cancel).ConfigureAwait(false);
+
+            // find key "self" key, this is the local peer's id.
+            var self = await keyChain.FindKeyByNameAsync("self", cancel).ConfigureAwait(false);
+
+            // consider creating "self" key, this is the local peer's id.
+            if (string.IsNullOrWhiteSpace(self?.Name))
+            {
+                await keyChain.CreateAsync("self", null, 0, cancel).ConfigureAwait(false);
+            }
+
             return keyChain;
         }
 
@@ -359,7 +363,7 @@ namespace Ipfs.Engine
         /// <exception cref="ArgumentException">
         ///   The <paramref name="path"/> cannot be resolved.
         /// </exception>
-        public async Task<Cid> ResolveIpfsPathToCidAsync (string path, CancellationToken cancel = default(CancellationToken))
+        public async Task<Cid> ResolveIpfsPathToCidAsync(string path, CancellationToken cancel = default)
         {
             var r = await Generic.ResolveAsync(path, true, cancel).ConfigureAwait(false);
             return Cid.Decode(r.Remove(0, 6));  // strip '/ipfs/'.
@@ -373,7 +377,7 @@ namespace Ipfs.Engine
         /// </value>
         /// <seealso cref="Start"/>
         /// <seealso cref="StartAsync"/>
-        public bool IsStarted => stopTasks.Count > 0;
+        public bool IsStarted => !stopTasks.IsEmpty;
 
         /// <summary>
         ///   Starts the network services.
@@ -390,7 +394,7 @@ namespace Ipfs.Engine
         /// </exception>
         public async Task StartAsync()
         {
-            if (stopTasks.Count > 0)
+            if (!stopTasks.IsEmpty)
             {
                 throw new Exception("IPFS engine is already started.");
             }
@@ -413,12 +417,12 @@ namespace Ipfs.Engine
             // Everybody needs the swarm.
             var swarm = await SwarmService.ConfigureAwait(false);
 
+            stopTasks.Add(swarm.StopAsync);
+            await swarm.StartAsync().ConfigureAwait(false);
+
             var peerManager = new PeerManager { Swarm = swarm };
             await peerManager.StartAsync().ConfigureAwait(false);
-            stopTasks.Add(async () =>
-            {
-                await peerManager.StopAsync().ConfigureAwait(false);
-            });
+            stopTasks.Add(async () => await peerManager.StopAsync().ConfigureAwait(false));
 
             // Start the primary services.
             var tasks = new List<Func<Task>>
@@ -455,7 +459,7 @@ namespace Ipfs.Engine
             // Starting listening to the swarm.
             var json = await Config.GetAsync("Addresses.Swarm").ConfigureAwait(false);
             var numberListeners = 0;
-            foreach (string a in json)
+            foreach (string a in json.Select(v => (string)v))
             {
                 try
                 {
@@ -473,7 +477,7 @@ namespace Ipfs.Engine
                 log.Error("No listeners were created.");
             }
 
-            // Now that the listener addresses are established, the discovery 
+            // Now that the listener addresses are established, the discovery
             // services can begin.
             MulticastService multicast = null;
             if (!Options.Discovery.DisableMdns)
@@ -486,7 +490,10 @@ namespace Ipfs.Engine
 
             var autodialer = new AutoDialer(swarm)
             {
-                MinConnections = Options.Swarm.MinConnections
+                MinConnections = Options.Swarm.MinConnections,
+                MaxConnections = Options.Swarm.MaxConnections > 16
+                                    ? Options.Swarm.MaxConnections
+                                    : 21
             };
 #pragma warning disable CS1998
             stopTasks.Add(async () => autodialer.Dispose());
@@ -551,7 +558,7 @@ namespace Ipfs.Engine
                     stopTasks.Add(async () => await mdns.StopAsync().ConfigureAwait(false));
                     await mdns.StartAsync().ConfigureAwait(false);
                 },
-                async () => 
+                async () =>
                 {
                     if (Options.Discovery.DisableRandomWalk)
                         return;
@@ -594,7 +601,7 @@ namespace Ipfs.Engine
             // Many services use cancellation to stop.  A cancellation may not run
             // immediately, so we need to give them some.
             // TODO: Would be nice to make this deterministic.
-            await Task.Delay(TimeSpan.FromMilliseconds(100)).ConfigureAwait(false);
+            await Task.Delay(TimeSpan.FromMilliseconds(128)).ConfigureAwait(false);
 
             log.Debug("stopped");
         }
@@ -667,7 +674,8 @@ namespace Ipfs.Engine
         /// </summary>
         public AsyncLazy<PeerTalk.Protocols.Ping1> PingService { get; private set; }
 
-        #pragma warning disable VSTHRD100 // Avoid async void methods
+#pragma warning disable VSTHRD100 // Avoid async void methods
+
         /// <summary>
         ///   Fired when a peer is discovered.
         /// </summary>
@@ -676,7 +684,7 @@ namespace Ipfs.Engine
         /// <remarks>
         ///   Registers the peer with the <see cref="SwarmService"/>.
         /// </remarks>
-        async void OnPeerDiscovered(object sender, MultiAddress address)
+        private async void OnPeerDiscovered(object sender, Peer peer)
 #pragma warning restore VSTHRD100 // Avoid async void methods
         {
             try
@@ -692,13 +700,15 @@ namespace Ipfs.Engine
         }
 
         #region IDisposable Support
-        bool disposedValue = false; // To detect redundant calls
+
+        private bool disposedValue = false; // To detect redundant calls
+        private readonly object _lockObject = new();
 
         /// <summary>
         ///  Releases the unmanaged and optionally managed resources.
         /// </summary>
         /// <param name="disposing">
-        ///   <b>true</b> to release both managed and unmanaged resources; <b>false</b> 
+        ///   <b>true</b> to release both managed and unmanaged resources; <b>false</b>
         ///   to release only unmanaged resources.
         /// </param>
         protected virtual void Dispose(bool disposing)
@@ -718,10 +728,8 @@ namespace Ipfs.Engine
         /// <summary>
         ///   Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
-        public void Dispose()
-        {
-            Dispose(true);
-        }
-        #endregion
+        public void Dispose() => Dispose(true);
+
+        #endregion IDisposable Support
     }
 }

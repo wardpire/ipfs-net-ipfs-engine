@@ -35,7 +35,7 @@ namespace Ipfs.Engine.Migration
         /// </param>
         /// <param name="cancel"></param>
         /// <returns></returns>
-        Task UpgradeAsync(IpfsEngine ipfs, CancellationToken cancel = default(CancellationToken));
+        Task UpgradeAsync(IpfsEngine ipfs, CancellationToken cancel = default);
 
         /// <summary>
         ///   Downgrade the repository.
@@ -45,6 +45,6 @@ namespace Ipfs.Engine.Migration
         /// </param>
         /// <param name="cancel"></param>
         /// <returns></returns>
-        Task DowngradeAsync(IpfsEngine ipfs, CancellationToken cancel = default(CancellationToken));
+        Task DowngradeAsync(IpfsEngine ipfs, CancellationToken cancel = default);
     }
 }

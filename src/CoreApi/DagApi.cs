@@ -9,18 +9,16 @@ using Ipfs.CoreApi;
 using Ipfs.Engine.LinkedData;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Org.BouncyCastle.Asn1.Ocsp;
 using PeterO.Cbor;
 
 namespace Ipfs.Engine.CoreApi
 {
-    class DagApi : IDagApi
+    internal class DagApi : IDagApi
     {
-        static readonly PODOptions podOptions = new PODOptions
-        (
-            removeIsPrefix: false,
-            useCamelCase: false
-        );
-        IpfsEngine ipfs;
+        private static readonly PODOptions podOptions = new("usecamelcase=false");
+
+        private readonly IpfsEngine ipfs;
 
         public DagApi(IpfsEngine ipfs)
         {
@@ -29,24 +27,20 @@ namespace Ipfs.Engine.CoreApi
 
         public async Task<JObject> GetAsync(
             Cid id,
-            CancellationToken cancel = default(CancellationToken))
+            CancellationToken cancel = default)
         {
             var block = await ipfs.Block.GetAsync(id, cancel).ConfigureAwait(false);
             var format = GetDataFormat(id);
             var canonical = format.Deserialise(block.DataBytes);
-            using (var ms = new MemoryStream())
-            using (var sr = new StreamReader(ms))
-            using (var reader = new JsonTextReader(sr))
-            {
-                canonical.WriteJSONTo(ms);
-                ms.Position = 0;
-                return (JObject) JObject.ReadFrom(reader);
-            }
+            using var ms = new MemoryStream();
+            using var sr = new StreamReader(ms);
+            using var reader = new JsonTextReader(sr);
+            canonical.WriteJSONTo(ms);
+            ms.Position = 0;
+            return (JObject)JObject.ReadFrom(reader);
         }
 
-        public async Task<JToken> GetAsync(
-            string path,
-            CancellationToken cancel = default(CancellationToken))
+        public async Task<JToken> GetAsync(string path, CancellationToken cancel = default)
         {
             if (path.StartsWith("/ipfs/"))
             {
@@ -58,9 +52,10 @@ namespace Ipfs.Engine.CoreApi
                 throw new ArgumentException($"Cannot resolve '{path}'.");
 
             JToken token = await GetAsync(Cid.Decode(parts[0]), cancel).ConfigureAwait(false);
+
             foreach (var child in parts.Skip(1))
             {
-                token = ((JObject)token)[child];
+                token = token[child];
                 if (token == null)
                     throw new Exception($"Missing component '{child}'.");
             }
@@ -68,9 +63,7 @@ namespace Ipfs.Engine.CoreApi
             return token;
         }
 
-        public async Task<T> GetAsync<T>(
-            Cid id, 
-            CancellationToken cancel = default(CancellationToken))
+        public async Task<T> GetAsync<T>(Cid id, CancellationToken cancel = default)
         {
             var block = await ipfs.Block.GetAsync(id, cancel).ConfigureAwait(false);
             var format = GetDataFormat(id);
@@ -90,27 +83,25 @@ namespace Ipfs.Engine.CoreApi
             string multiHash = MultiHash.DefaultAlgorithmName,
             string encoding = MultiBase.DefaultAlgorithmName,
             bool pin = true,
-            CancellationToken cancel = default(CancellationToken))
+            CancellationToken cancel = default)
         {
-            using (var ms = new MemoryStream())
-            using (var sw = new StreamWriter(ms))
-            using (var writer = new JsonTextWriter(sw))
-            {
-                await data.WriteToAsync(writer);
-                writer.Flush();
-                ms.Position = 0;
-                var format = GetDataFormat(contentType);
-                var block = format.Serialize(CBORObject.ReadJSON(ms));
-                return await ipfs.Block.PutAsync(block, contentType, multiHash, encoding, pin, cancel).ConfigureAwait(false);
-            }
+            using var ms = new MemoryStream();
+            using var sw = new StreamWriter(ms);
+            using var writer = new JsonTextWriter(sw);
+            await data.WriteToAsync(writer);
+            writer.Flush();
+            ms.Position = 0;
+            var format = GetDataFormat(contentType);
+            var block = format.Serialize(CBORObject.ReadJSON(ms));
+            return await ipfs.Block.PutAsync(block, contentType, multiHash, encoding, pin, cancel).ConfigureAwait(false);
         }
 
         public async Task<Cid> PutAsync(Stream data,
             string contentType = "dag-cbor",
             string multiHash = MultiHash.DefaultAlgorithmName,
             string encoding = MultiBase.DefaultAlgorithmName,
-            bool pin = true, 
-            CancellationToken cancel = default(CancellationToken))
+            bool pin = true,
+            CancellationToken cancel = default)
         {
             var format = GetDataFormat(contentType);
             var block = format.Serialize(CBORObject.Read(data));
@@ -122,14 +113,14 @@ namespace Ipfs.Engine.CoreApi
             string multiHash = MultiHash.DefaultAlgorithmName,
             string encoding = MultiBase.DefaultAlgorithmName,
             bool pin = true,
-            CancellationToken cancel = default(CancellationToken))
+            CancellationToken cancel = default)
         {
             var format = GetDataFormat(contentType);
             var block = format.Serialize(CBORObject.FromObject(data, podOptions));
             return await ipfs.Block.PutAsync(block, contentType, multiHash, encoding, pin, cancel).ConfigureAwait(false);
         }
 
-        ILinkedDataFormat GetDataFormat(Cid id)
+        private ILinkedDataFormat GetDataFormat(Cid id)
         {
             if (IpldRegistry.Formats.TryGetValue(id.ContentType, out ILinkedDataFormat format))
                 return format;
@@ -137,7 +128,7 @@ namespace Ipfs.Engine.CoreApi
             throw new KeyNotFoundException($"Unknown IPLD format '{id.ContentType}'.");
         }
 
-        ILinkedDataFormat GetDataFormat(string contentType)
+        private ILinkedDataFormat GetDataFormat(string contentType)
         {
             if (IpldRegistry.Formats.TryGetValue(contentType, out ILinkedDataFormat format))
                 return format;

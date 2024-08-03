@@ -7,13 +7,12 @@ using System.Threading.Tasks;
 
 namespace Ipfs.Engine
 {
-
     [TestClass]
     public class DagApiTest
     {
-        IpfsEngine ipfs = TestFixture.Ipfs;
-        byte[] blob = Encoding.UTF8.GetBytes("blorb");
-        string blob64 = "YmxvcmI"; // base 64 encoded with no padding
+        private IpfsEngine ipfs = TestFixture.Ipfs;
+        private byte[] blob = Encoding.UTF8.GetBytes("blorb");
+        private string blob64 = "YmxvcmI"; // base 64 encoded with no padding
 
         [TestMethod]
         public async Task Get_Raw()
@@ -22,19 +21,19 @@ namespace Ipfs.Engine
             Assert.AreEqual("bafkreiaxnnnb7qz2focittuqq3ya25q7rcv3bqynnczfzako47346wosmu", (string)cid);
 
             var dag = await ipfs.Dag.GetAsync(cid);
-            Assert.AreEqual(blob64, (string) dag["data"]);
+            Assert.AreEqual(blob64, (string)dag["data"]);
         }
 
-        class Name
+        private class NameAlpha
         {
             public string First { get; set; }
             public string Last { get; set; }
         }
 
-        class name
+        private class NameOmega
         {
-            public string first { get; set; }
-            public string last { get; set; }
+            public string First { get; set; }
+            public string Last { get; set; }
         }
 
         [TestMethod]
@@ -58,45 +57,45 @@ namespace Ipfs.Engine
         [TestMethod]
         public async Task PutAndGet_poco()
         {
-            var expected = new name { first = "John", last = "Smith" };
+            var expected = new NameOmega { First = "Judit", Last = "Markton" };
             var id = await ipfs.Dag.PutAsync(expected);
             Assert.IsNotNull(id);
 
-            var actual = await ipfs.Dag.GetAsync<name>(id);
+            var actual = await ipfs.Dag.GetAsync<NameOmega>(id);
             Assert.IsNotNull(actual);
-            Assert.AreEqual(expected.first, actual.first);
-            Assert.AreEqual(expected.last, actual.last);
+            Assert.AreEqual(expected.First, actual.First);
+            Assert.AreEqual(expected.Last, actual.Last);
 
-            var value = (string)await ipfs.Dag.GetAsync(id.Encode() + "/last");
-            Assert.AreEqual(expected.last, value);
+            var value = (string)await ipfs.Dag.GetAsync(id.Encode() + "/Last");
+            Assert.AreEqual(expected.Last, value);
         }
 
         [TestMethod]
         public async Task PutAndGet_poco_CidEncoding()
         {
-            var expected = new name { first = "John", last = "Smith" };
+            var expected = new NameOmega { First = "Adamuson", Last = "Wakawa" };
             var id = await ipfs.Dag.PutAsync(expected, encoding: "base32");
             Assert.IsNotNull(id);
             Assert.AreEqual("base32", id.Encoding);
             Assert.AreEqual(1, id.Version);
 
-            var actual = await ipfs.Dag.GetAsync<name>(id);
+            var actual = await ipfs.Dag.GetAsync<NameOmega>(id);
             Assert.IsNotNull(actual);
-            Assert.AreEqual(expected.first, actual.first);
-            Assert.AreEqual(expected.last, actual.last);
+            Assert.AreEqual(expected.First, actual.First);
+            Assert.AreEqual(expected.Last, actual.Last);
 
-            var value = (string)await ipfs.Dag.GetAsync(id.Encode() + "/last");
-            Assert.AreEqual(expected.last, value);
+            var value = (string)await ipfs.Dag.GetAsync(id.Encode() + "/Last");
+            Assert.AreEqual(expected.Last, value);
         }
 
         [TestMethod]
         public async Task PutAndGet_POCO()
         {
-            var expected = new Name { First = "John", Last = "Smith" };
+            var expected = new NameAlpha { First = "John", Last = "Smith" };
             var id = await ipfs.Dag.PutAsync(expected);
             Assert.IsNotNull(id);
 
-            var actual = await ipfs.Dag.GetAsync<Name>(id);
+            var actual = await ipfs.Dag.GetAsync<NameAlpha>(id);
             Assert.IsNotNull(actual);
             Assert.AreEqual(expected.First, actual.First);
             Assert.AreEqual(expected.Last, actual.Last);
@@ -127,5 +126,4 @@ namespace Ipfs.Engine
             Assert.AreEqual((string)expected, (string)cid);
         }
     }
-
 }

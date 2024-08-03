@@ -8,34 +8,34 @@ using Ipfs.CoreApi;
 
 namespace Ipfs.Engine.CoreApi
 {
-    class PubSubApi : IPubSubApi
+    internal class PubSubApi : IPubSubApi
     {
-        IpfsEngine ipfs;
+        private readonly IpfsEngine ipfs;
 
         public PubSubApi(IpfsEngine ipfs)
         {
             this.ipfs = ipfs;
         }
 
-        public async Task<IEnumerable<Peer>> PeersAsync(string topic = null, CancellationToken cancel = default(CancellationToken))
+        public async Task<IEnumerable<Peer>> PeersAsync(string topic = null, CancellationToken cancel = default)
         {
             var pubsub = await ipfs.PubSubService.ConfigureAwait(false);
             return await pubsub.PeersAsync(topic, cancel);
         }
 
-        public async Task PublishAsync(string topic, string message, CancellationToken cancel = default(CancellationToken))
+        public async Task PublishAsync(string topic, string message, CancellationToken cancel = default)
         {
             var pubsub = await ipfs.PubSubService.ConfigureAwait(false);
             await pubsub.PublishAsync(topic, message, cancel);
         }
 
-        public async Task PublishAsync(string topic, byte[] message, CancellationToken cancel = default(CancellationToken))
+        public async Task PublishAsync(string topic, byte[] message, CancellationToken cancel = default)
         {
             var pubsub = await ipfs.PubSubService.ConfigureAwait(false);
             await pubsub.PublishAsync(topic, message, cancel);
         }
 
-        public async Task PublishAsync(string topic, Stream message, CancellationToken cancel = default(CancellationToken))
+        public async Task PublishAsync(string topic, Stream message, CancellationToken cancel = default)
         {
             var pubsub = await ipfs.PubSubService.ConfigureAwait(false);
             await pubsub.PublishAsync(topic, message, cancel);
@@ -47,7 +47,7 @@ namespace Ipfs.Engine.CoreApi
             await pubsub.SubscribeAsync(topic, handler, cancellationToken);
         }
 
-        public async Task<IEnumerable<string>> SubscribedTopicsAsync(CancellationToken cancel = default(CancellationToken))
+        public async Task<IEnumerable<string>> SubscribedTopicsAsync(CancellationToken cancel = default)
         {
             var pubsub = await ipfs.PubSubService.ConfigureAwait(false);
             return await pubsub.SubscribedTopicsAsync(cancel);

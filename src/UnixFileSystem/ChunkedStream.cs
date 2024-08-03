@@ -19,14 +19,14 @@ namespace Ipfs.Engine.UnixFileSystem
     /// </remarks>
     public class ChunkedStream : Stream
     {
-        class BlockInfo
+        private class BlockInfo
         {
             public Cid Id;
             public long Position;
         }
 
-        List<BlockInfo> blocks = new List<BlockInfo>();
-        long fileSize;
+        private readonly List<BlockInfo> blocks = new List<BlockInfo>();
+        private readonly long fileSize;
 
         /// <summary>
         ///   Creates a new instance of the <see cref="ChunkedStream"/> class with
@@ -35,7 +35,7 @@ namespace Ipfs.Engine.UnixFileSystem
         /// <param name="blockService"></param>
         /// <param name="keyChain"></param>
         /// <param name="dag"></param>
-        public ChunkedStream (IBlockApi blockService, KeyChain keyChain, DagNode dag)
+        public ChunkedStream(IBlockApi blockService, KeyChain keyChain, DagNode dag)
         {
             BlockService = blockService;
             KeyChain = keyChain;
@@ -48,14 +48,14 @@ namespace Ipfs.Engine.UnixFileSystem
                 blocks.Add(new BlockInfo
                 {
                     Id = links[i].Id,
-                    Position = (long) position
+                    Position = (long)position
                 });
                 position += dm.BlockSizes[i];
             }
         }
 
-        IBlockApi BlockService { get; set; }
-        KeyChain KeyChain { get; set; }
+        private IBlockApi BlockService { get; set; }
+        private KeyChain KeyChain { get; set; }
 
         /// <inheritdoc />
         public override long Length => fileSize;
@@ -76,7 +76,8 @@ namespace Ipfs.Engine.UnixFileSystem
         public override bool CanWrite => false;
 
         /// <inheritdoc />
-        public override void Flush() { }
+        public override void Flush()
+        { }
 
         /// <inheritdoc />
         public override long Position { get; set; }
@@ -118,9 +119,10 @@ namespace Ipfs.Engine.UnixFileSystem
             return k;
         }
 
-        BlockInfo currentBlock;
-        byte[] currentData;
-        async Task<ArraySegment<byte>> GetBlockAsync (long position, CancellationToken cancel)
+        private BlockInfo currentBlock;
+        private byte[] currentData;
+
+        private async Task<ArraySegment<byte>> GetBlockAsync(long position, CancellationToken cancel)
         {
             if (position >= Length)
             {
@@ -134,7 +136,7 @@ namespace Ipfs.Engine.UnixFileSystem
                 currentData = new byte[stream.Length];
                 for (int i = 0, n; i < stream.Length; i += n)
                 {
-                    n = await stream.ReadAsync(currentData, i, (int) stream.Length - i);
+                    n = await stream.ReadAsync(currentData, i, (int)stream.Length - i);
                 }
             }
             int offset = (int)(position - currentBlock.Position);

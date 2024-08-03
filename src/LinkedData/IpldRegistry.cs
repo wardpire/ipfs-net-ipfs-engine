@@ -54,6 +54,5 @@ namespace Ipfs.Engine.LinkedData
         {
             Formats.Remove(name);
         }
-
     }
 }

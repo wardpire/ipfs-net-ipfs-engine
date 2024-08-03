@@ -38,7 +38,6 @@ cn4oisOvxCprs4aM9UVjtZTCjfyNpX8UWwT1W3rySV+KQNhxuMy3RzmL
             var key = await keychain.ImportAsync("alice", alice, "mypassword".ToArray());
             try
             {
-
                 Assert.AreEqual(aliceKid, key.Id);
 
                 var cipher = Convert.FromBase64String(@"
@@ -87,7 +86,7 @@ nHILFmhac/+a/StQOKuf9dx5qXeGvt9LnwKuGGSfNX4g+dTkoa6N
         {
             var ipfs = TestFixture.Ipfs;
             var keychain = await ipfs.KeyChainAsync();
-            var key = await ipfs.Key.CreateAsync("alice", "rsa", 512);
+            await ipfs.Key.CreateAsync("alice", "rsa", 512);
             try
             {
                 var data = new byte[] { 1, 2, 3, 4 };
@@ -121,7 +120,6 @@ nHILFmhac/+a/StQOKuf9dx5qXeGvt9LnwKuGGSfNX4g+dTkoa6N
         }
 
         [TestMethod]
-        [Ignore("NYI")]
         public async Task CreateCms_Ed25519()
         {
             var ipfs = TestFixture.Ipfs;
@@ -139,6 +137,5 @@ nHILFmhac/+a/StQOKuf9dx5qXeGvt9LnwKuGGSfNX4g+dTkoa6N
                 await ipfs.Key.RemoveAsync("alice");
             }
         }
-
     }
 }

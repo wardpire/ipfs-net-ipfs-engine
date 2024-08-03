@@ -10,16 +10,16 @@ using PeerTalk;
 
 namespace Ipfs.Engine.CoreApi
 {
-    class DnsApi : IDnsApi
+    internal class DnsApi : IDnsApi
     {
-        IpfsEngine ipfs;
+        private readonly IpfsEngine ipfs;
 
         public DnsApi(IpfsEngine ipfs)
         {
             this.ipfs = ipfs;
         }
 
-        public async Task<string> ResolveAsync(string name, bool recursive = false, CancellationToken cancel = default(CancellationToken))
+        public async Task<string> ResolveAsync(string name, bool recursive = false, CancellationToken cancel = default)
         {
             // Find the TXT dnslink in either <name> or _dnslink.<name>.
             string link = null;
@@ -52,14 +52,14 @@ namespace Ipfs.Engine.CoreApi
             throw new NotSupportedException($"Cannot resolve '{link}'.");
         }
 
-        async Task<string> FindAsync(string name, CancellationToken cancel)
+        private async Task<string> FindAsync(string name, CancellationToken cancel)
         {
             var response = await ipfs.Options.Dns.QueryAsync(name, DnsType.TXT, cancel).ConfigureAwait(false);
             var link = response.Answers
                 .OfType<TXTRecord>()
                 .SelectMany(txt => txt.Strings)
                 .Where(s => s.StartsWith("dnslink="))
-                .Select(s => s.Substring(8))
+                .Select(s => s[8..])
                 .FirstOrDefault();
 
             if (link == null)

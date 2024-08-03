@@ -11,13 +11,13 @@ using System.Threading.Tasks;
 namespace Ipfs.Engine.Migration
 {
     /// <summary>
-    ///   Allows migration of the repository. 
+    ///   Allows migration of the repository.
     /// </summary>
     public class MigrationManager
     {
-        static ILog log = LogManager.GetLogger(typeof(MigrationManager));
+        private static readonly ILog log = LogManager.GetLogger(typeof(MigrationManager));
 
-        readonly IpfsEngine ipfs;
+        private readonly IpfsEngine ipfs;
 
         /// <summary>
         ///   Creates a new instance of the <see cref="MigrationManager"/> class
@@ -79,11 +79,11 @@ namespace Ipfs.Engine.Migration
         /// <param name="cancel">
         /// </param>
         /// <returns></returns>
-        public async Task MirgrateToVersionAsync(int version, CancellationToken cancel = default(CancellationToken))
+        public async Task MirgrateToVersionAsync(int version, CancellationToken cancel = default)
         {
             if (version != 0 && !Migrations.Any(m => m.Version == version))
             {
-                throw new ArgumentOutOfRangeException("version", $"Repository version '{version}' is unknown.");
+                throw new ArgumentOutOfRangeException(nameof(version), $"Repository version '{version}' is unknown.");
             }
 
             var currentVersion = CurrentVersion;
@@ -95,7 +95,7 @@ namespace Ipfs.Engine.Migration
 
                 if (increment > 0)
                 {
-                    var migration = Migrations.FirstOrDefault(m => m.Version == nextVersion);
+                    var migration = Migrations.Find(m => m.Version == nextVersion);
                     if (migration.CanUpgrade)
                     {
                         await migration.UpgradeAsync(ipfs, cancel);
@@ -103,7 +103,7 @@ namespace Ipfs.Engine.Migration
                 }
                 else if (increment < 0)
                 {
-                    var migration = Migrations.FirstOrDefault(m => m.Version == currentVersion);
+                    var migration = Migrations.Find(m => m.Version == currentVersion);
                     if (migration.CanDowngrade)
                     {
                         await migration.DowngradeAsync(ipfs, cancel);
@@ -121,7 +121,7 @@ namespace Ipfs.Engine.Migration
         /// <returns>
         ///   The path to the version file.
         /// </returns>
-        string VersionPath()
+        private string VersionPath()
         {
             return Path.Combine(ipfs.Options.Repository.ExistingFolder(), "version");
         }

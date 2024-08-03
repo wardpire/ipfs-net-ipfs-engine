@@ -28,8 +28,8 @@ namespace Ipfs.Engine.Cryptography
         /// <param name="cancel"></param>
         /// <returns></returns>
         public async Task<byte[]> CreateCertificateAsync(
-            string keyName, 
-            CancellationToken cancel = default(CancellationToken))
+            string keyName,
+            CancellationToken cancel = default)
         {
             var cert = await CreateBCCertificateAsync(keyName, cancel).ConfigureAwait(false);
             return cert.GetEncoded();
@@ -45,20 +45,17 @@ namespace Ipfs.Engine.Cryptography
         /// <returns></returns>
         public async Task<X509Certificate> CreateBCCertificateAsync(
             string keyName,
-            CancellationToken cancel = default(CancellationToken))
+            CancellationToken cancel = default)
         {
             // Get the BC key pair for the named key.
             var ekey = await Store.TryGetAsync(keyName, cancel).ConfigureAwait(false);
             if (ekey == null)
                 throw new KeyNotFoundException($"The key '{keyName}' does not exist.");
             AsymmetricCipherKeyPair kp = null;
-            UseEncryptedKey(ekey, key =>
-            {
-                kp = this.GetKeyPairFromPrivateKey(key);
-            });
+            UseEncryptedKey(ekey, key => kp = this.GetKeyPairFromPrivateKey(key));
 
             // A signer for the key.
-            var ku = new KeyUsage(KeyUsage.DigitalSignature 
+            var ku = new KeyUsage(KeyUsage.DigitalSignature
                 | KeyUsage.DataEncipherment
                 | KeyUsage.KeyEncipherment);
             ISignatureFactory signatureFactory = null;
@@ -77,7 +74,7 @@ namespace Ipfs.Engine.Cryptography
             else if (kp.Private is Ed25519PrivateKeyParameters)
             {
                 signatureFactory = new Asn1SignatureFactory(
-                    EdECObjectIdentifiers.id_Ed25519.Id.ToString(),
+                    EdECObjectIdentifiers.id_Ed25519.Id,
                     kp.Private);
                 ku = new KeyUsage(KeyUsage.DigitalSignature);
             }
@@ -106,6 +103,5 @@ namespace Ipfs.Engine.Cryptography
 
             return certGenerator.Generate(signatureFactory);
         }
-
     }
 }

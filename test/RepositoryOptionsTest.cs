@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 
 namespace Ipfs.Engine
 {
-    
     [TestClass]
     public class RepositoryOptionsTest
     {
@@ -20,65 +19,25 @@ namespace Ipfs.Engine
             Assert.IsNotNull(options.Folder);
         }
 
-
         [TestMethod]
-        public void Environment_Home()
+        public void Repository_Directory()
         {
             var names = new string[] { "IPFS_PATH", "HOME", "HOMEPATH" };
-            var values = names.Select(n => Environment.GetEnvironmentVariable(n));
-            var sep = Path.DirectorySeparatorChar;
-            try
-            {
-                foreach (var name in names)
-                {
-                    Environment.SetEnvironmentVariable(name, null);
-                }
-                Environment.SetEnvironmentVariable("HOME", $"{sep}home1");
-                var options = new RepositoryOptions();
-                Assert.AreEqual($"{sep}home1{sep}.csipfs", options.Folder);
+            var values = names.Select(Environment.GetEnvironmentVariable);
 
-                Environment.SetEnvironmentVariable("HOME", $"{sep}home2{sep}");
-                options = new RepositoryOptions();
-                Assert.AreEqual($"{sep}home2{sep}.csipfs", options.Folder);
-            }
-            finally
+            foreach (var name in names)
             {
-                var pairs = names.Zip(values, (name, value) => new { name = name, value = value });
-                foreach (var pair in pairs)
-                {
-                    Environment.SetEnvironmentVariable(pair.name, pair.value);
-                }
+                Environment.SetEnvironmentVariable(name, null);
             }
-        }
 
-        [TestMethod]
-        public void Environment_HomePath()
-        {
-            var names = new string[] { "IPFS_PATH", "HOME", "HOMEPATH" };
-            var values = names.Select(n => Environment.GetEnvironmentVariable(n));
-            var sep = Path.DirectorySeparatorChar;
-            try
+            var repoPath = Environment.GetEnvironmentVariable("IPFS_PATH");
+            if (string.IsNullOrWhiteSpace(repoPath))
             {
-                foreach (var name in names)
-                {
-                    Environment.SetEnvironmentVariable(name, null);
-                }
-                Environment.SetEnvironmentVariable("HOMEPATH", $"{sep}home1");
-                var options = new RepositoryOptions();
-                Assert.AreEqual($"{sep}home1{sep}.csipfs", options.Folder);
+                repoPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".csipfs");
+            }
 
-                Environment.SetEnvironmentVariable("HOMEPATH", $"{sep}home2{sep}");
-                options = new RepositoryOptions();
-                Assert.AreEqual($"{sep}home2{sep}.csipfs", options.Folder);
-            }
-            finally
-            {
-                var pairs = names.Zip(values, (name, value) => new { name = name, value = value });
-                foreach (var pair in pairs)
-                {
-                    Environment.SetEnvironmentVariable(pair.name, pair.value);
-                }
-            }
+            var options = new RepositoryOptions();
+            Assert.AreEqual(repoPath, options.Folder);
         }
 
         [TestMethod]
@@ -110,6 +69,5 @@ namespace Ipfs.Engine
                 }
             }
         }
-
     }
 }

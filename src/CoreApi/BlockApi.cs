@@ -12,38 +12,41 @@ using System.Runtime.Serialization;
 namespace Ipfs.Engine.CoreApi
 {
     [DataContract]
-    class DataBlock : IDataBlock
+    internal class DataBlock : IDataBlock
     {
         [DataMember]
         public byte[] DataBytes { get; set; }
 
-        public Stream DataStream { get { return new MemoryStream(DataBytes, false); } }
+        public Stream DataStream
+        { get { return new MemoryStream(DataBytes, false); } }
 
         [DataMember]
-        public Cid Id  { get; set; }
+        public Cid Id { get; set; }
 
         [DataMember]
         public long Size { get; set; }
     }
 
-    class BlockApi : IBlockApi
+    internal class BlockApi : IBlockApi
     {
-        static ILog log = LogManager.GetLogger(typeof(BlockApi));
-        static DataBlock emptyDirectory = new DataBlock
+        private static readonly ILog log = LogManager.GetLogger(typeof(BlockApi));
+
+        private static readonly DataBlock emptyDirectory = new()
         {
             DataBytes = ObjectApi.EmptyDirectory.ToArray(),
             Id = ObjectApi.EmptyDirectory.Id,
             Size = ObjectApi.EmptyDirectory.ToArray().Length
         };
-        static DataBlock emptyNode = new DataBlock
+
+        private static readonly DataBlock emptyNode = new()
         {
             DataBytes = ObjectApi.EmptyNode.ToArray(),
             Id = ObjectApi.EmptyNode.Id,
             Size = ObjectApi.EmptyNode.ToArray().Length
         };
 
-        IpfsEngine ipfs;
-        FileStore<Cid, DataBlock> store;
+        private readonly IpfsEngine ipfs;
+        private FileStore<Cid, DataBlock> store;
 
         public BlockApi(IpfsEngine ipfs)
         {
@@ -64,10 +67,7 @@ namespace Ipfs.Engine.CoreApi
                         Folder = folder,
                         NameToKey = (cid) => cid.Hash.ToBase32(),
                         KeyToName = (key) => new MultiHash(key.FromBase32()),
-                        Serialize = async (stream, cid, block, cancel) => 
-                        {
-                            await stream.WriteAsync(block.DataBytes, 0, block.DataBytes.Length, cancel).ConfigureAwait(false);
-                        },
+                        Serialize = async (stream, _, block, cancel) => await stream.WriteAsync(block.DataBytes.AsMemory(0, block.DataBytes.Length), cancel).ConfigureAwait(false),
                         Deserialize = async (stream, cid, cancel) =>
                         {
                             var block = new DataBlock
@@ -78,7 +78,7 @@ namespace Ipfs.Engine.CoreApi
                             block.DataBytes = new byte[block.Size];
                             for (int i = 0, n; i < block.Size; i += n)
                             {
-                                n = await stream.ReadAsync(block.DataBytes, i, (int)block.Size - i, cancel).ConfigureAwait(false);
+                                n = await stream.ReadAsync(block.DataBytes.AsMemory(i, (int)block.Size - i), cancel).ConfigureAwait(false);
                             }
                             return block;
                         }
@@ -88,8 +88,7 @@ namespace Ipfs.Engine.CoreApi
             }
         }
 
-
-        public async Task<IDataBlock> GetAsync(Cid id, CancellationToken cancel = default(CancellationToken))
+        public async Task<IDataBlock> GetAsync(Cid id, CancellationToken cancel = default)
         {
             // Hack for empty object and empty directory object
             if (id == emptyDirectory.Id)
@@ -119,26 +118,23 @@ namespace Ipfs.Engine.CoreApi
             // content.  As a provider peer is found, it is connected to and
             // the bitswap want lists are exchanged.  Hopefully the provider will
             // then send the block to us via bitswap and the get task will finish.
-            using (var queryCancel = CancellationTokenSource.CreateLinkedTokenSource(cancel))
-            {
-                var bitswapGet = ipfs.Bitswap.GetAsync(id, queryCancel.Token).ConfigureAwait(false);
-                var dht = await ipfs.DhtService;
-                var _ = dht.FindProvidersAsync(
-                    id: id,
-                    limit: 20, // TODO: remove this
-                    cancel: queryCancel.Token,
-                    action: (peer) => { var __ = ProviderFoundAsync(peer, queryCancel.Token).ConfigureAwait(false); }
-                );
+            using var queryCancel = CancellationTokenSource.CreateLinkedTokenSource(cancel);
+            var bitswapGet = ipfs.Bitswap.GetAsync(id, queryCancel.Token).ConfigureAwait(false);
+            var dht = await ipfs.DhtService;
+            var _ = dht.FindProvidersAsync(
+                id: id,
+                limit: 21, // TODO: remove this
+                action: (peer) => ProviderFoundAsync(peer, queryCancel.Token).ConfigureAwait(false),
+                cancel: queryCancel.Token);
 
-                var got = await bitswapGet;
-                log.Debug("bitswap got the block");
+            IDataBlock got = await bitswapGet;
+            log.Debug("bitswap got the block");
 
-                queryCancel.Cancel(false); // stop the network query.
-                return got;
-            }
+            queryCancel.Cancel(false); // stop the network query.
+            return got;
         }
 
-        async Task ProviderFoundAsync(Peer peer, CancellationToken cancel)
+        private async Task ProviderFoundAsync(Peer peer, CancellationToken cancel)
         {
             if (cancel.IsCancellationRequested)
                 return;
@@ -161,11 +157,11 @@ namespace Ipfs.Engine.CoreApi
             string multiHash = MultiHash.DefaultAlgorithmName,
             string encoding = MultiBase.DefaultAlgorithmName,
             bool pin = false,
-            CancellationToken cancel = default(CancellationToken))
+            CancellationToken cancel = default)
         {
             if (data.Length > ipfs.Options.Block.MaxBlockSize)
             {
-                throw new ArgumentOutOfRangeException("data.Length", $"Block length can not exceed { ipfs.Options.Block.MaxBlockSize}.");
+                throw new ArgumentOutOfRangeException("data.Length", $"Block length can not exceed {ipfs.Options.Block.MaxBlockSize}.");
             }
 
             // Small enough for an inline CID?
@@ -179,7 +175,7 @@ namespace Ipfs.Engine.CoreApi
             }
 
             // CID V1 encoding defaulting to base32 which is not
-            // the multibase default. 
+            // the multibase default.
             var cid = new Cid
             {
                 ContentType = contentType,
@@ -231,7 +227,7 @@ namespace Ipfs.Engine.CoreApi
             string multiHash = MultiHash.DefaultAlgorithmName,
             string encoding = MultiBase.DefaultAlgorithmName,
             bool pin = false,
-            CancellationToken cancel = default(CancellationToken))
+            CancellationToken cancel = default)
         {
             using (var ms = new MemoryStream())
             {
@@ -240,7 +236,7 @@ namespace Ipfs.Engine.CoreApi
             }
         }
 
-        public async Task<Cid> RemoveAsync(Cid id, bool ignoreNonexistent = false, CancellationToken cancel = default(CancellationToken))
+        public async Task<Cid> RemoveAsync(Cid id, bool ignoreNonexistent = false, CancellationToken cancel = default)
         {
             if (id.Hash.IsIdentityHash)
             {
@@ -256,7 +252,7 @@ namespace Ipfs.Engine.CoreApi
             throw new KeyNotFoundException($"Block '{id.Encode()}' does not exist.");
         }
 
-        public async Task<IDataBlock> StatAsync(Cid id, CancellationToken cancel = default(CancellationToken))
+        public async Task<IDataBlock> StatAsync(Cid id, CancellationToken cancel = default)
         {
             if (id.Hash.IsIdentityHash)
             {

@@ -14,25 +14,19 @@ namespace Ipfs.Engine
     [TestClass]
     public class TestFixture
     {
-        const string passphrase = "this is not a secure pass phrase";
-        public static IpfsEngine Ipfs = new IpfsEngine(passphrase.ToCharArray());
-        public static IpfsEngine IpfsOther = new IpfsEngine(passphrase.ToCharArray());
+        private const string passphrase = "this is not a secure pass phrase";
+        public static IpfsEngine Ipfs = new(passphrase.ToCharArray());
+        public static IpfsEngine IpfsOther = new(passphrase.ToCharArray());
 
         static TestFixture()
         {
             Ipfs.Options.Repository.Folder = Path.Combine(Path.GetTempPath(), "ipfs-test");
             Ipfs.Options.KeyChain.DefaultKeySize = 512;
-            Ipfs.Config.SetAsync(
-                "Addresses.Swarm", 
-                JToken.FromObject(new string[] { "/ip4/0.0.0.0/tcp/0" })
-            ).Wait();
+            Ipfs.Config.SetAsync("Addresses.Swarm", JToken.FromObject(new string[] { "/ip4/0.0.0.0/tcp/0" })).Wait();
 
             IpfsOther.Options.Repository.Folder = Path.Combine(Path.GetTempPath(), "ipfs-other");
             IpfsOther.Options.KeyChain.DefaultKeySize = 512;
-            IpfsOther.Config.SetAsync(
-                "Addresses.Swarm",
-                JToken.FromObject(new string[] { "/ip4/0.0.0.0/tcp/0" })
-            ).Wait();
+            IpfsOther.Config.SetAsync("Addresses.Swarm", JToken.FromObject(new string[] { "/ip4/0.0.0.0/tcp/0" })).Wait();
         }
 
         [TestMethod]
@@ -45,6 +39,10 @@ namespace Ipfs.Engine
         [AssemblyInitialize]
         public static void AssemblyInitialize(TestContext context)
         {
+            if (context is null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
             // set logger factory
             var properties = new Common.Logging.Configuration.NameValueCollection
             {
@@ -52,7 +50,6 @@ namespace Ipfs.Engine
                 ["showLogName"] = "true",
                 ["showDateTime"] = "true",
                 ["dateTimeFormat"] = "HH:mm:ss.fff"
-
             };
             LogManager.Adapter = new ConsoleOutLoggerFactoryAdapter(properties);
         }

@@ -8,32 +8,32 @@ using Ipfs.CoreApi;
 
 namespace Ipfs.Engine.CoreApi
 {
-    class NameApi : INameApi
+    internal class NameApi : INameApi
     {
-        IpfsEngine ipfs;
+        private readonly IpfsEngine ipfs;
 
         public NameApi(IpfsEngine ipfs)
         {
             this.ipfs = ipfs;
         }
 
-        public Task<NamedContent> PublishAsync(string path, bool resolve = true, string key = "self", TimeSpan? lifetime = null, CancellationToken cancel = default(CancellationToken))
+        public Task<NamedContent> PublishAsync(string path, bool resolve = true, string key = "self", TimeSpan? lifetime = null, CancellationToken cancel = default)
         {
             throw new NotImplementedException();
         }
 
-        public Task<NamedContent> PublishAsync(Cid id, string key = "self", TimeSpan? lifetime = null, CancellationToken cancel = default(CancellationToken))
+        public Task<NamedContent> PublishAsync(Cid id, string key = "self", TimeSpan? lifetime = null, CancellationToken cancel = default)
         {
             throw new NotImplementedException();
         }
 
-        public async Task<string> ResolveAsync(string name, bool recursive = false, bool nocache = false, CancellationToken cancel = default(CancellationToken))
+        public async Task<string> ResolveAsync(string name, bool recursive = false, bool nocache = false, CancellationToken cancel = default)
         {
             do
             {
                 if (name.StartsWith("/ipns/"))
                 {
-                    name = name.Substring(6);
+                    name = name[6..];
                 }
                 var parts = name.Split('/').Where(p => p.Length > 0).ToArray();
                 if (parts.Length == 0)
@@ -72,6 +72,5 @@ namespace Ipfs.Engine.CoreApi
         {
             return name.IndexOf('.') > 0;
         }
-
     }
 }

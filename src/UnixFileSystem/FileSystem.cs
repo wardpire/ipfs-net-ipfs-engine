@@ -16,7 +16,7 @@ namespace Ipfs.Engine.UnixFileSystem
     /// </summary>
     public static class FileSystem
     {
-        static readonly byte[] emptyData = new byte[0];
+        private static readonly byte[] emptyData = Array.Empty<byte>();
 
         /// <summary>
         ///   Creates a stream that can read the supplied <see cref="Cid"/>.
@@ -58,7 +58,7 @@ namespace Ipfs.Engine.UnixFileSystem
                 throw new NotSupportedException($"Cannot read content type '{id.ContentType}'.");
         }
 
-        static async Task<Stream> CreateRawStreamAsync(
+        private static async Task<Stream> CreateRawStreamAsync(
             Cid id,
             IBlockApi blockService,
             KeyChain keyChain,
@@ -68,7 +68,7 @@ namespace Ipfs.Engine.UnixFileSystem
             return block.DataStream;
         }
 
-        static async Task<Stream> CreateDagProtoBufStreamAsync(
+        private static async Task<Stream> CreateDagProtoBufStreamAsync(
             Cid id,
             IBlockApi blockService,
             KeyChain keyChain,
@@ -97,7 +97,7 @@ namespace Ipfs.Engine.UnixFileSystem
             throw new Exception($"Cannot determine the file format of '{id}'.");
         }
 
-        static async Task<Stream> CreateCmsStreamAsync(
+        private static async Task<Stream> CreateCmsStreamAsync(
             Cid id,
             IBlockApi blockService,
             KeyChain keyChain,

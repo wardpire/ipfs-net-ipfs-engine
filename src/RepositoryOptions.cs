@@ -20,16 +20,13 @@ namespace Ipfs.Engine
         public RepositoryOptions()
         {
             var path = Environment.GetEnvironmentVariable("IPFS_PATH");
-            if (path != null)
+            if (string.IsNullOrWhiteSpace(path))
             {
-                Folder = path;
+                Folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".csipfs");
             }
             else
             {
-                Folder = Path.Combine(
-                    Environment.GetEnvironmentVariable("HOME") ??
-                    Environment.GetEnvironmentVariable("HOMEPATH"),
-                    ".csipfs");
+                Folder = path;
             }
         }
 
@@ -60,6 +57,5 @@ namespace Ipfs.Engine
             }
             return path;
         }
-
     }
 }

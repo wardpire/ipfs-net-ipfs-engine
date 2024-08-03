@@ -28,6 +28,5 @@ namespace Ipfs.Engine.Cryptography
         ///   Password protected PKCS #8 structure in the PEM format
         /// </value>
         public string Pem { get; set; }
-
     }
 }

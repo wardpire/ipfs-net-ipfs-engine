@@ -1,4 +1,6 @@
 ﻿using Common.Logging;
+using Ipfs.Engine.Cryptography.Proto;
+using Org.BouncyCastle.Asn1.Pkcs;
 using Org.BouncyCastle.Asn1.Sec;
 using Org.BouncyCastle.Asn1.X9;
 using Org.BouncyCastle.Crypto;
@@ -9,15 +11,18 @@ using Org.BouncyCastle.Math;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.X509;
+using PeerTalk.Cryptography;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Ipfs.Engine.Cryptography
 {
@@ -26,11 +31,12 @@ namespace Ipfs.Engine.Cryptography
     /// </summary>
     public partial class KeyChain : Ipfs.CoreApi.IKeyApi
     {
-        static ILog log = LogManager.GetLogger(typeof(KeyChain));
+        private static readonly ILog log = LogManager.GetLogger(typeof(KeyChain));
 
-        IpfsEngine ipfs;
-        char[] dek;
-        FileStore<string, EncryptedKey> store;
+        private readonly IpfsEngine ipfs;
+        private char[] dek;
+        private FileStore<string, EncryptedKey> store;
+        private static byte[] hashedBytes;
 
         /// <summary>
         ///   Create a new instance of the <see cref="KeyChain"/> class.
@@ -43,22 +49,28 @@ namespace Ipfs.Engine.Cryptography
             this.ipfs = ipfs;
         }
 
-        FileStore<string, EncryptedKey> Store
+        private FileStore<string, EncryptedKey> Store
         {
             get
             {
-                if (store == null)
+                if (store != null)
                 {
-                    var folder = Path.Combine(ipfs.Options.Repository.Folder, "keys");
-                    if (!Directory.Exists(folder))
-                        Directory.CreateDirectory(folder);
-                    store = new FileStore<string, EncryptedKey>
-                    {
-                        Folder = folder,
-                        NameToKey = (name) => Encoding.UTF8.GetBytes(name).ToBase32(),
-                        KeyToName = (key) => Encoding.UTF8.GetString(Base32.Decode(key))
-                    };
+                    return store;
                 }
+
+                var folder = Path.Combine(ipfs.Options.Repository.Folder, "keys");
+                if (!Directory.Exists(folder))
+                {
+                    Directory.CreateDirectory(folder);
+                }
+
+                store = new FileStore<string, EncryptedKey>
+                {
+                    Folder = folder,
+                    NameToKey = (name) => Encoding.UTF8.GetBytes(name).ToBase32(),
+                    KeyToName = (key) => Encoding.UTF8.GetString(Base32.Decode(key))
+                };
+
                 return store;
             }
         }
@@ -88,7 +100,7 @@ namespace Ipfs.Engine.Cryptography
         ///   Neither the <paramref name="passphrase"/> nor the DEK are stored.
         ///   </para>
         /// </remarks>
-        public async Task SetPassphraseAsync (SecureString passphrase, CancellationToken cancel = default(CancellationToken))
+        public async Task SetPassphraseAsync(SecureString passphrase, CancellationToken cancel = default)
         {
             // TODO: Verify DEK options.
             // TODO: get digest based on Options.Hash
@@ -131,9 +143,9 @@ namespace Ipfs.Engine.Cryptography
         /// </param>
         /// <returns>
         ///   A task that represents the asynchronous operation. The task's result is
-        ///   an <see cref="IKey"/> or <b>null</b> if the the key is not defined.
+        ///   an <see cref="IKey"/> or <b>null</b> if the key is not defined.
         /// </returns>
-        public async Task<IKey> FindKeyByNameAsync(string name, CancellationToken cancel = default(CancellationToken))
+        public async Task<IKey> FindKeyByNameAsync(string name, CancellationToken cancel = default)
         {
             var key = await Store.TryGetAsync(name, cancel).ConfigureAwait(false);
             if (key == null)
@@ -155,13 +167,13 @@ namespace Ipfs.Engine.Cryptography
         ///   the IPFS encoded public key.
         /// </returns>
         /// <remarks>
-        ///   The IPFS public key is the base-64 encoding of a protobuf encoding containing 
+        ///   The IPFS public key is the base-64 encoding of a protobuf encoding containing
         ///   a type and the DER encoding of the PKCS Subject Public Key Info.
         /// </remarks>
         /// <seealso href="https://tools.ietf.org/html/rfc5280#section-4.1.2.7"/>
-        public async Task<string> GetPublicKeyAsync(string name, CancellationToken cancel = default(CancellationToken))
+        public async Task<string> GetIpfsPublicKeyAsync(string name, CancellationToken cancel = default)
         {
-            // TODO: Rename to GetIpfsPublicKeyAsync
+            //
             string result = null;
             var ekey = await Store.TryGetAsync(name, cancel).ConfigureAwait(false);
             if (ekey != null)
@@ -196,8 +208,30 @@ namespace Ipfs.Engine.Cryptography
             return result;
         }
 
+        /// <summary>
+        /// Get IPFS shared key
+        /// </summary>
+        /// <param name="cancel"></param>
+        public static async Task<byte[]> GetSharedKeyAsync(CancellationToken cancel = default)
+        {
+            // returh existing shared key
+            if (hashedBytes?.Length >= 32)
+            {
+                return hashedBytes;
+            }
+
+            var localSharedKey = new SharedKey();
+            await localSharedKey.GenerateAsync("IPFS_XKEY", cancel);
+
+            // update member varaiable
+            hashedBytes = localSharedKey.Key;
+
+            // return AES key
+            return hashedBytes;
+        }
+
         /// <inheritdoc />
-        public async Task<IKey> CreateAsync(string name, string keyType, int size, CancellationToken cancel = default(CancellationToken))
+        public async Task<IKey> CreateAsync(string name, string keyType, int size, CancellationToken cancel = default)
         {
             // Apply defaults.
             if (string.IsNullOrWhiteSpace(keyType))
@@ -208,6 +242,7 @@ namespace Ipfs.Engine.Cryptography
 
             // Create the key pair.
             log.DebugFormat("Creating {0} key named '{1}'", keyType, name);
+
             IAsymmetricCipherKeyPairGenerator g;
             switch (keyType)
             {
@@ -216,29 +251,31 @@ namespace Ipfs.Engine.Cryptography
                     g.Init(new RsaKeyGenerationParameters(
                         BigInteger.ValueOf(0x10001), new SecureRandom(), size, 25));
                     break;
+
                 case "ed25519":
                     g = GeneratorUtilities.GetKeyPairGenerator("Ed25519");
                     g.Init(new Ed25519KeyGenerationParameters(new SecureRandom()));
                     break;
+
                 case "secp256k1":
                     g = GeneratorUtilities.GetKeyPairGenerator("EC");
                     g.Init(new ECKeyGenerationParameters(SecObjectIdentifiers.SecP256k1, new SecureRandom()));
                     break;
+
                 default:
                     throw new Exception($"Invalid key type '{keyType}'.");
             }
             var keyPair = g.GenerateKeyPair();
             log.Debug("Created key");
-
             return await AddPrivateKeyAsync(name, keyPair, cancel).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public async Task<string> ExportAsync(string name, char[] password, CancellationToken cancel = default(CancellationToken))
+        public async Task<string> ExportAsync(string name, char[] password, CancellationToken cancel = default)
         {
             string pem = "";
             var key = await Store.GetAsync(name, cancel).ConfigureAwait(false);
-            UseEncryptedKey(key, pkey => 
+            UseEncryptedKey(key, pkey =>
             {
                 using (var sw = new StringWriter())
                 {
@@ -257,7 +294,7 @@ namespace Ipfs.Engine.Cryptography
         }
 
         /// <inheritdoc />
-        public async Task<IKey> ImportAsync(string name, string pem, char[] password = null, CancellationToken cancel = default(CancellationToken))
+        public async Task<IKey> ImportAsync(string name, string pem, char[] password = null, CancellationToken cancel = default)
         {
             AsymmetricKeyParameter key;
             using (var sr = new StringReader(pem))
@@ -272,7 +309,7 @@ namespace Ipfs.Engine.Cryptography
                 {
                     throw new UnauthorizedAccessException("The password is wrong.", e);
                 }
-                if (key == null || !key.IsPrivate)
+                if (key?.IsPrivate != true)
                     throw new InvalidDataException("Not a valid PEM private key");
             }
 
@@ -280,17 +317,16 @@ namespace Ipfs.Engine.Cryptography
         }
 
         /// <inheritdoc />
-        public Task<IEnumerable<IKey>> ListAsync(CancellationToken cancel = default(CancellationToken))
+        public Task<IEnumerable<IKey>> ListAsync(CancellationToken cancel = default)
         {
             var keys = Store
                 .Values
-                .Select(key => (IKey)new KeyInfo { Id = key.Id, Name = key.Name })
-                ;
+                .Select(key => (IKey)new KeyInfo { Id = key.Id, Name = key.Name });
             return Task.FromResult(keys);
         }
 
         /// <inheritdoc />
-        public async Task<IKey> RemoveAsync(string name, CancellationToken cancel = default(CancellationToken))
+        public async Task<IKey> RemoveAsync(string name, CancellationToken cancel = default)
         {
             var key = await Store.TryGetAsync(name, cancel).ConfigureAwait(false);
             if (key == null)
@@ -301,14 +337,14 @@ namespace Ipfs.Engine.Cryptography
         }
 
         /// <inheritdoc />
-        public async Task<IKey> RenameAsync(string oldName, string newName, CancellationToken cancel = default(CancellationToken))
+        public async Task<IKey> RenameAsync(string oldName, string newName, CancellationToken cancel = default)
         {
             var key = await Store.TryGetAsync(oldName, cancel).ConfigureAwait(false);
             if (key == null)
                 return null;
             key.Name = newName;
             await Store.PutAsync(newName, key, cancel).ConfigureAwait(false);
-            await Store.RemoveAsync(oldName,  cancel).ConfigureAwait(false);
+            await Store.RemoveAsync(oldName, cancel).ConfigureAwait(false);
 
             return new KeyInfo { Id = key.Id, Name = newName };
         }
@@ -326,31 +362,29 @@ namespace Ipfs.Engine.Cryptography
         ///   A task that represents the asynchronous operation. The task's result is
         ///   the private key as an <b>AsymmetricKeyParameter</b>.
         /// </returns>
-        public async Task<AsymmetricKeyParameter> GetPrivateKeyAsync(string name, CancellationToken cancel = default(CancellationToken))
+        public async Task<AsymmetricKeyParameter> GetPrivateKeyAsync(string name, CancellationToken cancel = default)
         {
             var key = await Store.TryGetAsync(name, cancel).ConfigureAwait(false);
             if (key == null)
-                throw new KeyNotFoundException($"The key '{name}' does not exist.");
-            AsymmetricKeyParameter kp = null;
-            UseEncryptedKey(key, pkey =>
             {
-                kp = pkey;
-            });
+                throw new KeyNotFoundException($"The key '{name}' does not exist.");
+            }
+
+            AsymmetricKeyParameter kp = null;
+            UseEncryptedKey(key, pkey => kp = pkey);
             return kp;
         }
 
-        void UseEncryptedKey(EncryptedKey key, Action<AsymmetricKeyParameter> action)
+        private void UseEncryptedKey(EncryptedKey key, Action<AsymmetricKeyParameter> action)
         {
-            using (var sr = new StringReader(key.Pem))
-            using (var pf = new PasswordFinder { Password = dek })
-            {
-                var reader = new PemReader(sr, pf);
-                var privateKey = (AsymmetricKeyParameter)reader.ReadObject();
-                action(privateKey);
-            }
+            using var sr = new StringReader(key.Pem);
+            using var pf = new PasswordFinder { Password = dek };
+            var reader = new PemReader(sr, pf);
+            var privateKey = (AsymmetricKeyParameter)reader.ReadObject();
+            action(privateKey);
         }
 
-        async Task<IKey> AddPrivateKeyAsync(string name, AsymmetricCipherKeyPair keyPair, CancellationToken cancel)
+        private async Task<IKey> AddPrivateKeyAsync(string name, AsymmetricCipherKeyPair keyPair, CancellationToken cancel)
         {
             // Create the key ID
             var keyId = CreateKeyId(keyPair.Public);
@@ -388,11 +422,11 @@ namespace Ipfs.Engine.Cryptography
         /// <param name="key"></param>
         /// <returns></returns>
         /// <remarks>
-        ///   The key id is the SHA-256 multihash of its public key. The public key is 
-        ///   a protobuf encoding containing a type and 
+        ///   The key id is the SHA-256 multihash of its public key. The public key is
+        ///   a protobuf encoding containing a type and
         ///   the DER encoding of the PKCS SubjectPublicKeyInfo.
         /// </remarks>
-        MultiHash CreateKeyId (AsymmetricKeyParameter key)
+        private MultiHash CreateKeyId(AsymmetricKeyParameter key)
         {
             var spki = SubjectPublicKeyInfoFactory
                 .CreateSubjectPublicKeyInfo(key)
@@ -416,9 +450,9 @@ namespace Ipfs.Engine.Cryptography
             {
                 ProtoBuf.Serializer.Serialize(ms, publicKey);
 
-                // If the length of the serialized bytes <= 42, then we compute the "identity" multihash of 
-                // the serialized bytes. The idea here is that if the serialized byte array 
-                // is short enough, we can fit it in a multihash verbatim without having to 
+                // If the length of the serialized bytes <= 42, then we compute the "identity" multihash of
+                // the serialized bytes. The idea here is that if the serialized byte array
+                // is short enough, we can fit it in a multihash verbatim without having to
                 // condense it using a hash function.
                 var alg = (ms.Length <= 48) ? "identity" : "sha2-256";
 
@@ -427,7 +461,7 @@ namespace Ipfs.Engine.Cryptography
             }
         }
 
-        AsymmetricCipherKeyPair GetKeyPairFromPrivateKey(AsymmetricKeyParameter privateKey)
+        private AsymmetricCipherKeyPair GetKeyPairFromPrivateKey(AsymmetricKeyParameter privateKey)
         {
             AsymmetricCipherKeyPair keyPair = null;
             if (privateKey is RsaPrivateCrtKeyParameters rsa)
@@ -452,7 +486,7 @@ namespace Ipfs.Engine.Cryptography
             return keyPair;
         }
 
-        class PasswordFinder : IPasswordFinder, IDisposable
+        private class PasswordFinder : IPasswordFinder, IDisposable
         {
             public char[] Password;
 
@@ -463,7 +497,7 @@ namespace Ipfs.Engine.Cryptography
 
             public char[] GetPassword()
             {
-               return Password;
+                return Password;
             }
         }
     }

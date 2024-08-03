@@ -30,5 +30,4 @@ namespace Ipfs.Engine.BlockExchange
         /// </summary>
         public List<TaskCompletionSource<IDataBlock>> Consumers;
     }
-
 }
