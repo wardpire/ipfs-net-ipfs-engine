@@ -64,6 +64,7 @@ namespace Ipfs.Engine.BlockExchange
                         }
                         else
                         {
+                            log.Debug($"{connection.RemotePeer.Id} wants {cid}");
                             // TODO: Should we have a timeout?
                             var _ = GetBlockAsync(cid, connection.RemotePeer, CancellationToken.None);
                         }
@@ -106,7 +107,7 @@ namespace Ipfs.Engine.BlockExchange
                 }
 
                 // Send block to remote.
-                using (var stream = await Bitswap.Swarm.DialAsync(remotePeer, this.ToString()).ConfigureAwait(false))
+                using (var stream = await Bitswap.Swarm.DialAsync(remotePeer, this).ConfigureAwait(false))
                 {
                     await SendAsync(stream, block, cancel).ConfigureAwait(false);
                 }
