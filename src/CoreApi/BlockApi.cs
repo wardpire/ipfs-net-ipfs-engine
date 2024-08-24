@@ -123,7 +123,6 @@ namespace Ipfs.Engine.CoreApi
             var dht = await ipfs.DhtService;
             var _ = dht.FindProvidersAsync(
                 id: id,
-                limit: 21, // TODO: remove this
                 action: (peer) => ProviderFoundAsync(peer, queryCancel.Token).ConfigureAwait(false),
                 cancel: queryCancel.Token);
 

@@ -17,10 +17,10 @@ namespace Ipfs.Engine.CoreApi
             this.ipfs = ipfs;
         }
 
-        public async Task<IKey> CreateAsync(string name, string keyType, int size, CancellationToken cancel = default)
+        public async Task<IKey> GeneratePrivateKeyAsync(string name, string keyType, int size, CancellationToken cancel = default)
         {
             var keyChain = await ipfs.KeyChainAsync(cancel).ConfigureAwait(false);
-            return await keyChain.CreateAsync(name, keyType, size, cancel).ConfigureAwait(false);
+            return await keyChain.GeneratePrivateKeyAsync(name, keyType, size, cancel).ConfigureAwait(false);
         }
 
         public async Task<string> ExportAsync(string name, char[] password, CancellationToken cancel = default)

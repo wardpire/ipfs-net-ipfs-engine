@@ -1,11 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net7.0</TargetFramework>
+		<TargetFramework>net8.0</TargetFramework>
 		<AssemblyName>Ipfs.Engine</AssemblyName>
 		<RootNamespace>Ipfs.Engine</RootNamespace>
 		<DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
-		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 
 		<!-- Needed for snupkg -->
 		<DebugType>portable</DebugType>
@@ -14,22 +13,22 @@
 		<AssemblyVersion>0.42</AssemblyVersion>
 		<Version>0.42</Version>
 
-    <!-- Nuget specs -->
-    <PackageId>Ipfs.Engine</PackageId>
-    <Authors>Richard Schneider</Authors>
-    <Title>IPFS Engine</Title>
-    <Description>An embedded IPFS engine for .Net</Description>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageReleaseNotes>https://github.com/richardschneider/net-ipfs-engine/releases</PackageReleaseNotes>
-    <Copyright>© 2018-2019 Richard Schneider</Copyright>
-    <PackageTags>ipfs peer-to-peer p2p distributed file-system web</PackageTags>
-    <IncludeSymbols>True</IncludeSymbols>
-    <PackageProjectUrl>https://github.com/richardschneider/net-ipfs-engine</PackageProjectUrl>
-    <PackageIconUrl>https://raw.githubusercontent.com/richardschneider/net-ipfs-core/master/doc/images/ipfs-cs-logo-64x64.png</PackageIconUrl>
+		<!-- Nuget specs -->
+		<PackageId>Ipfs.Engine</PackageId>
+		<Authors>Richard Schneider</Authors>
+		<Title>IPFS Engine</Title>
+		<Description>An embedded IPFS engine for .Net</Description>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<PackageReleaseNotes>https://github.com/richardschneider/net-ipfs-engine/releases</PackageReleaseNotes>
+		<Copyright>© 2018-2019 Richard Schneider</Copyright>
+		<PackageTags>ipfs peer-to-peer p2p distributed file-system web</PackageTags>
+		<IncludeSymbols>True</IncludeSymbols>
+		<PackageProjectUrl>https://github.com/richardschneider/net-ipfs-engine</PackageProjectUrl>
+		<PackageIconUrl>https://raw.githubusercontent.com/richardschneider/net-ipfs-core/master/doc/images/ipfs-cs-logo-64x64.png</PackageIconUrl>
 
-    <GeneratePackageOnBuild Condition=" '$(Configuration)' == 'Release' ">true</GeneratePackageOnBuild>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-  </PropertyGroup>
+		<GeneratePackageOnBuild Condition=" '$(Configuration)' == 'Release' ">true</GeneratePackageOnBuild>
+		<GenerateDocumentationFile>false</GenerateDocumentationFile>
+	</PropertyGroup>
 
 	<PropertyGroup>
 		<!-- Optional: Publish the repository URL in the built .nupkg (in the NuSpec <Repository> element) -->
@@ -40,38 +39,24 @@
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<AllowedOutputExtensionsInPackageBuildOutputFolder>.pdb;$(AllowedOutputExtensionsInPackageBuildOutputFolder)</AllowedOutputExtensionsInPackageBuildOutputFolder>
+		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Ipfs.Core" Version="0.55.0" />
-    <PackageReference Include="Makaretu.Dns.Unicast" Version="0.11.1" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-    <PackageReference Include="Nito.AsyncEx.Coordination" Version="5.0.0" />
-    <PackageReference Include="PeterO.Cbor" Version="3.1.0" />
-    <PackageReference Include="Portable.BouncyCastle" Version="1.8.10" />
-    <PackageReference Include="protobuf-net" Version="2.4.0" />
-    <PackageReference Include="SharpZipLib" Version="1.2.0" />
-  </ItemGroup>
-
 	<ItemGroup>
-		<Reference Include="Ipfs.Core">
-			<HintPath>..\..\net-ipfs-core\src\bin\Release\net7.0\Ipfs.Core.dll</HintPath>
-		</Reference>
-		<Reference Include="Makaretu.Dns">
-			<HintPath>..\..\net-dns\src\bin\Release\net7.0\Makaretu.Dns.dll</HintPath>
-		</Reference>
-		<Reference Include="Makaretu.Dns.Multicast">
-			<HintPath>..\..\net-mdns\src\bin\Release\net7.0\Makaretu.Dns.Multicast.dll</HintPath>
-		</Reference>
-		<Reference Include="Makaretu.Dns.Unicast">
-			<HintPath>..\..\net-udns\src\bin\Release\net7.0\Makaretu.Dns.Unicast.dll</HintPath>
-		</Reference>
-		<Reference Include="Makaretu.KBucket">
-			<HintPath>..\..\k-bucket\src\bin\Release\net7.0\Makaretu.KBucket.dll</HintPath>
-		</Reference>
-		<Reference Include="PeerTalk">
-			<HintPath>..\..\peer-talk\src\bin\Release\net7.0\PeerTalk.dll</HintPath>
-		</Reference>
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="Nito.AsyncEx.Coordination" Version="5.1.2" />
+		<PackageReference Include="PeterO.Cbor" Version="4.5.3" />
+		<PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
+		<PackageReference Include="protobuf-net" Version="3.2.30" />
+		<PackageReference Include="SharpZipLib" Version="1.4.2" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<ProjectReference Include="..\..\k-bucket\src\KBucket.csproj" />
+		<ProjectReference Include="..\..\net-dns\src\Dns.csproj" />
+		<ProjectReference Include="..\..\net-ipfs-core\src\IpfsCore.csproj" />
+		<ProjectReference Include="..\..\net-mdns\src\Mdns.csproj" />
+		<ProjectReference Include="..\..\net-udns\src\Udns.csproj" />
+		<ProjectReference Include="..\..\peer-talk\src\PeerTalk.csproj" />
+	</ItemGroup>
 </Project>

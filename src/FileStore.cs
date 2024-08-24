@@ -21,7 +21,7 @@ namespace Ipfs.Engine
     /// <remarks>
     ///   All operations are atomic, a reader/writer lock is used.
     /// </remarks>
-    public class FileStore<TName, TValue> where TValue : class
+    public class FileStore<TName, TValue> : IStore<TName, TValue> where TValue : class
     {
         private readonly AsyncReaderWriterLock storeLock = new();
 

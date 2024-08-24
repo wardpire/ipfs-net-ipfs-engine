@@ -36,35 +36,12 @@ namespace Ipfs.Engine
         private static readonly ILog log = LogManager.GetLogger(typeof(IpfsEngine));
 
         private KeyChain keyChain;
-        private SecureString passphrase;
+        private SecureString? keyChainInitPassphrase;
         private ConcurrentBag<Func<Task>> stopTasks = new();
 
         /// <summary>
         ///   Creates a new instance of the <see cref="IpfsEngine"/> class
-        ///   with the IPFS_PASS environment variable.
-        /// </summary>
-        /// <remarks>
-        ///   Th passphrase must be in the IPFS_PASS environment variable.
-        /// </remarks>
-        public IpfsEngine()
-        {
-            var s = Environment.GetEnvironmentVariable("IPFS_PASS");
-            if (string.IsNullOrWhiteSpace(s))
-            {
-                throw new Exception("The IPFS_PASS environement variable is missing.");
-            }
-
-            passphrase = new SecureString();
-            foreach (var c in s)
-            {
-                this.passphrase.AppendChar(c);
-            }
-            Init();
-        }
-
-        /// <summary>
-        ///   Creates a new instance of the <see cref="IpfsEngine"/> class
-        ///   with the specified passphrase.
+        ///   with the specified passphrase. If passphrase is not provided IPFS_PASS environment variable is required.
         /// </summary>
         /// <param name="passphrase">
         ///   The password used to access the keychain.
@@ -73,13 +50,33 @@ namespace Ipfs.Engine
         ///   A <b>SecureString</b> copy of the passphrase is made so that the array can be
         ///   zeroed out after the call.
         /// </remarks>
-        public IpfsEngine(char[] passphrase)
+        public IpfsEngine(char[]? passphrase = default)
         {
-            this.passphrase = new SecureString();
+            if (passphrase == default)
+            {
+                var s = Environment.GetEnvironmentVariable("IPFS_PASS");
+                if (string.IsNullOrWhiteSpace(s))
+                {
+                    throw new Exception("The IPFS_PASS environement variable is missing.");
+                }
+                passphrase = s.ToCharArray();
+            }
+
+            this.keyChainInitPassphrase = new SecureString();
             foreach (var c in passphrase)
             {
-                this.passphrase.AppendChar(c);
+                this.keyChainInitPassphrase.AppendChar(c);
             }
+            Init();
+        }
+
+        /// <summary>
+        ///   Creates a new instance of the <see cref="IpfsEngine"/> class
+        ///   with the whole keychain ready to use. It can be used to provide custom keys o custom keystore
+        /// </summary>
+        public IpfsEngine(KeyChain keyChain)
+        {
+            this.keyChain = keyChain;
             Init();
         }
 
@@ -95,7 +92,7 @@ namespace Ipfs.Engine
         /// </remarks>
         public IpfsEngine(SecureString passphrase)
         {
-            this.passphrase = passphrase.Copy();
+            this.keyChainInitPassphrase = passphrase.Copy();
             Init();
         }
 
@@ -301,13 +298,19 @@ namespace Ipfs.Engine
 
             lock (_lockObject)
             {
-                keyChain ??= new KeyChain(this)
+                keyChain ??= new KeyChain(this.Options.Repository.Folder)
                 {
                     Options = Options.KeyChain
                 };
             }
 
-            await keyChain.SetPassphraseAsync(passphrase, cancel).ConfigureAwait(false);
+            if (keyChainInitPassphrase != default)
+            {
+                await keyChain.SetPassphraseAsync(keyChainInitPassphrase, cancel).ConfigureAwait(false);
+                //Pass converted to dek and is no needed anymore
+                keyChainInitPassphrase.Dispose();
+                keyChainInitPassphrase = default;
+            }
 
             // find key "self" key, this is the local peer's id.
             var self = await keyChain.FindKeyByNameAsync("self", cancel).ConfigureAwait(false);
@@ -315,7 +318,7 @@ namespace Ipfs.Engine
             // consider creating "self" key, this is the local peer's id.
             if (string.IsNullOrWhiteSpace(self?.Name))
             {
-                await keyChain.CreateAsync("self", null, 0, cancel).ConfigureAwait(false);
+                await keyChain.GeneratePrivateKeyAsync("self", null, 0, cancel).ConfigureAwait(false);
             }
 
             return keyChain;
@@ -690,7 +693,6 @@ namespace Ipfs.Engine
 
                 if (disposing)
                 {
-                    passphrase?.Dispose();
                     Stop();
                 }
             }

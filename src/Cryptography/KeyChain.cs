@@ -33,23 +33,28 @@ namespace Ipfs.Engine.Cryptography
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(KeyChain));
 
-        private readonly IpfsEngine ipfs;
+        private readonly string fileRepositoryBasePath;
         private char[] dek;
-        private FileStore<string, EncryptedKey> store;
+        private IStore<string, EncryptedKey> store;
         private static byte[] hashedBytes;
 
         /// <summary>
         ///   Create a new instance of the <see cref="KeyChain"/> class.
         /// </summary>
-        /// <param name="ipfs">
-        ///   The IPFS Engine associated with the key chain.
-        /// </param>
-        public KeyChain(IpfsEngine ipfs)
+        public KeyChain(string fileRepositoryBasePath)
         {
-            this.ipfs = ipfs;
+            this.fileRepositoryBasePath = fileRepositoryBasePath;
         }
 
-        private FileStore<string, EncryptedKey> Store
+        /// <summary>
+        ///   Create a new instance of the <see cref="KeyChain"/> class.
+        /// </summary>
+        public KeyChain(IStore<string,EncryptedKey> keyStore)
+        {
+            this.store = keyStore;
+        }
+
+        private IStore<string, EncryptedKey> Store
         {
             get
             {
@@ -58,7 +63,7 @@ namespace Ipfs.Engine.Cryptography
                     return store;
                 }
 
-                var folder = Path.Combine(ipfs.Options.Repository.Folder, "keys");
+                var folder = Path.Combine(fileRepositoryBasePath, "keys");
                 if (!Directory.Exists(folder))
                 {
                     Directory.CreateDirectory(folder);
@@ -231,7 +236,7 @@ namespace Ipfs.Engine.Cryptography
         }
 
         /// <inheritdoc />
-        public async Task<IKey> CreateAsync(string name, string keyType, int size, CancellationToken cancel = default)
+        public async Task<IKey> GeneratePrivateKeyAsync(string name, string keyType, int size, CancellationToken cancel = default)
         {
             // Apply defaults.
             if (string.IsNullOrWhiteSpace(keyType))
@@ -294,9 +299,9 @@ namespace Ipfs.Engine.Cryptography
         }
 
         /// <inheritdoc />
-        public async Task<IKey> ImportAsync(string name, string pem, char[] password = null, CancellationToken cancel = default)
+        public async Task<IKey> ImportAsync(string name, string pem, char[]? password = null, CancellationToken cancel = default)
         {
-            AsymmetricKeyParameter key;
+            AsymmetricKeyParameter? key;
             using (var sr = new StringReader(pem))
             using (var pf = new PasswordFinder { Password = password })
             {
@@ -426,7 +431,7 @@ namespace Ipfs.Engine.Cryptography
         ///   a protobuf encoding containing a type and
         ///   the DER encoding of the PKCS SubjectPublicKeyInfo.
         /// </remarks>
-        private MultiHash CreateKeyId(AsymmetricKeyParameter key)
+        private static MultiHash CreateKeyId(AsymmetricKeyParameter key)
         {
             var spki = SubjectPublicKeyInfoFactory
                 .CreateSubjectPublicKeyInfo(key)
@@ -488,14 +493,14 @@ namespace Ipfs.Engine.Cryptography
 
         private class PasswordFinder : IPasswordFinder, IDisposable
         {
-            public char[] Password;
+            public char[]? Password;
 
             public void Dispose()
             {
                 Password = null;
             }
 
-            public char[] GetPassword()
+            public char[]? GetPassword()
             {
                 return Password;
             }

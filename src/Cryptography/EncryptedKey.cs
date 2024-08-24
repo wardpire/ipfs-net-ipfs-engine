@@ -9,7 +9,7 @@ namespace Ipfs.Engine.Cryptography
     /// <summary>
     ///   A private key that is password protected.
     /// </summary>
-    class EncryptedKey
+    public class EncryptedKey
     {
         /// <summary>
         ///   The local name of the key.
