@@ -33,8 +33,8 @@ namespace Ipfs.Engine.Migration
             var store = new FileStore<Cid, Pin1>
             {
                 Folder = path,
-                NameToKey = (cid) => cid.Hash.ToBase32(),
-                KeyToName = (key) => new MultiHash(key.FromBase32())
+                KeyToFileName = (cid) => cid.Hash.ToBase32(),
+                FileNameToKey = (key) => new MultiHash(key.FromBase32())
             };
 
             var files = folder.EnumerateFiles()
@@ -43,7 +43,7 @@ namespace Ipfs.Engine.Migration
             {
                 try
                 {
-                    var name = store.KeyToName(fi.Name);
+                    var name = store.FileNameToKey(fi.Name);
                     var pin = await store.GetAsync(name, cancel).ConfigureAwait(false);
                     File.Create(Path.Combine(store.Folder, pin.Id));
                     File.Delete(store.GetPath(name));
@@ -66,8 +66,8 @@ namespace Ipfs.Engine.Migration
             var store = new FileStore<Cid, Pin1>
             {
                 Folder = path,
-                NameToKey = (cid) => cid.Hash.ToBase32(),
-                KeyToName = (key) => new MultiHash(key.FromBase32())
+                KeyToFileName = (cid) => cid.Hash.ToBase32(),
+                FileNameToKey = (key) => new MultiHash(key.FromBase32())
             };
 
             var files = folder.EnumerateFiles()

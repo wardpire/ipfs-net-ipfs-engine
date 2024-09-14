@@ -9,6 +9,7 @@ using System.Linq;
 using System.Collections.Concurrent;
 using PeerTalk;
 using System.Globalization;
+using Ipfs.Core;
 
 namespace Ipfs.Engine.CoreApi
 {
@@ -25,7 +26,7 @@ namespace Ipfs.Engine.CoreApi
         {
             var blockApi = (BlockApi)ipfs.Block;
             var pinApi = (PinApi)ipfs.Pin;
-            foreach (var cid in blockApi.Store.Names)
+            foreach (var cid in blockApi.Store.Keys)
             {
                 if (!await pinApi.IsPinnedAsync(cid, cancel).ConfigureAwait(false))
                 {
@@ -52,7 +53,7 @@ namespace Ipfs.Engine.CoreApi
             };
 
             var blockApi = (BlockApi)ipfs.Block;
-            GetDirStats(blockApi.Store.Folder, data, cancel);
+            GetDirStatsAsync(blockApi.Store, data, cancel);
 
             return data;
         }
@@ -69,19 +70,13 @@ namespace Ipfs.Engine.CoreApi
                 .ToString(CultureInfo.InvariantCulture));
         }
 
-        private void GetDirStats(string path, RepositoryData data, CancellationToken cancel)
+        private async Task GetDirStatsAsync(IStore<Cid, DataBlock> store, RepositoryData data, CancellationToken cancel)
         {
-            foreach (var file in Directory.EnumerateFiles(path))
+            foreach (var item in store.Keys)
             {
                 cancel.ThrowIfCancellationRequested();
                 ++data.NumObjects;
-                data.RepoSize += (ulong)(new FileInfo(file).Length);
-            }
-
-            foreach (var dir in Directory.EnumerateDirectories(path))
-            {
-                cancel.ThrowIfCancellationRequested();
-                GetDirStats(dir, data, cancel);
+                data.RepoSize += (await store.SizeOfAsync(item,cancel))??0;
             }
         }
     }

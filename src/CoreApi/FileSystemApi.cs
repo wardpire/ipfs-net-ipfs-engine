@@ -397,7 +397,7 @@ namespace Ipfs.Engine.CoreApi
                 throw new NotImplementedException();
             }
 
-            public Task<IDataBlock> StatAsync(Cid id, CancellationToken cancel = default)
+            public Task<bool> IsLocallyAvailable(Cid id, CancellationToken cancel = default)
             {
                 throw new NotImplementedException();
             }

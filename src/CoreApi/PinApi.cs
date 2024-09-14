@@ -35,8 +35,8 @@ namespace Ipfs.Engine.CoreApi
                     store = new FileStore<Cid, Pin>
                     {
                         Folder = folder,
-                        NameToKey = (cid) => cid.Hash.ToBase32(),
-                        KeyToName = (key) => new MultiHash(key.FromBase32())
+                        KeyToFileName = (cid) => cid.Hash.ToBase32(),
+                        FileNameToKey = (key) => new MultiHash(key.FromBase32())
                     };
                 }
                 return store;
@@ -99,7 +99,7 @@ namespace Ipfs.Engine.CoreApi
                 await Store.RemoveAsync(current, cancel).ConfigureAwait(false);
                 if (recursive)
                 {
-                    if (null != await ipfs.Block.StatAsync(current, cancel).ConfigureAwait(false))
+                    if (await ipfs.Block.IsLocallyAvailable(current, cancel).ConfigureAwait(false))
                     {
                         try
                         {

@@ -1,4 +1,5 @@
 ﻿using Common.Logging;
+using Ipfs.Core;
 using Ipfs.Engine.Cryptography.Proto;
 using Org.BouncyCastle.Asn1.Pkcs;
 using Org.BouncyCastle.Asn1.Sec;
@@ -72,8 +73,8 @@ namespace Ipfs.Engine.Cryptography
                 store = new FileStore<string, EncryptedKey>
                 {
                     Folder = folder,
-                    NameToKey = (name) => Encoding.UTF8.GetBytes(name).ToBase32(),
-                    KeyToName = (key) => Encoding.UTF8.GetString(Base32.Decode(key))
+                    KeyToFileName = (key) => Encoding.UTF8.GetBytes(key).ToBase32(),
+                    FileNameToKey = (fileName) => Encoding.UTF8.GetString(Base32.Decode(fileName))
                 };
 
                 return store;

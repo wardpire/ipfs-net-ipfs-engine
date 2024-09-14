@@ -8,6 +8,7 @@ using Ipfs.CoreApi;
 using Common.Logging;
 using System.Linq;
 using System.Runtime.Serialization;
+using Ipfs.Core;
 
 namespace Ipfs.Engine.CoreApi
 {
@@ -46,14 +47,14 @@ namespace Ipfs.Engine.CoreApi
         };
 
         private readonly IpfsEngine ipfs;
-        private FileStore<Cid, DataBlock> store;
+        private IStore<Cid, DataBlock> store;
 
         public BlockApi(IpfsEngine ipfs)
         {
             this.ipfs = ipfs;
         }
 
-        public FileStore<Cid, DataBlock> Store
+        public IStore<Cid, DataBlock> Store
         {
             get
             {
@@ -62,13 +63,12 @@ namespace Ipfs.Engine.CoreApi
                     var folder = Path.Combine(ipfs.Options.Repository.Folder, "blocks");
                     if (!Directory.Exists(folder))
                         Directory.CreateDirectory(folder);
-                    store = new FileStore<Cid, DataBlock>
-                    {
-                        Folder = folder,
-                        NameToKey = (cid) => cid.Hash.ToBase32(),
-                        KeyToName = (key) => new MultiHash(key.FromBase32()),
-                        Serialize = async (stream, _, block, cancel) => await stream.WriteAsync(block.DataBytes.AsMemory(0, block.DataBytes.Length), cancel).ConfigureAwait(false),
-                        Deserialize = async (stream, cid, cancel) =>
+                    store = ipfs.StoreFactory.CreateStore<Cid, DataBlock>(
+                        folder,
+                        nameToKey: (cid) => cid.Hash.ToBase32(),
+                        keyToName: (key) => new MultiHash(key.FromBase32()),
+                        serialize: async (stream, _, block, cancel) => await stream.WriteAsync(block.DataBytes.AsMemory(0, block.DataBytes.Length), cancel).ConfigureAwait(false),
+                        deserialize: async (stream, cid, cancel) =>
                         {
                             var block = new DataBlock
                             {
@@ -82,7 +82,7 @@ namespace Ipfs.Engine.CoreApi
                             }
                             return block;
                         }
-                    };
+                        );
                 }
                 return store;
             }
@@ -251,25 +251,13 @@ namespace Ipfs.Engine.CoreApi
             throw new KeyNotFoundException($"Block '{id.Encode()}' does not exist.");
         }
 
-        public async Task<IDataBlock> StatAsync(Cid id, CancellationToken cancel = default)
+        public async Task<bool> IsLocallyAvailable(Cid id, CancellationToken cancel = default)
         {
             if (id.Hash.IsIdentityHash)
             {
-                return await GetAsync(id, cancel).ConfigureAwait(false);
+                return true;
             }
-
-            IDataBlock block = null;
-            var length = await Store.LengthAsync(id, cancel).ConfigureAwait(false);
-            if (length.HasValue)
-            {
-                block = new DataBlock
-                {
-                    Id = id,
-                    Size = length.Value
-                };
-            }
-
-            return block;
+            return await Store.ExistsAsync(id, cancel).ConfigureAwait(false);
         }
     }
 }

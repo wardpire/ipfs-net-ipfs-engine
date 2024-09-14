@@ -92,7 +92,7 @@ namespace Ipfs.Engine.BlockExchange
             try
             {
                 IDataBlock block;
-                if (null != await Bitswap.BlockService.StatAsync(cid, cancel).ConfigureAwait(false))
+                if (await Bitswap.BlockService.IsLocallyAvailable(cid, cancel).ConfigureAwait(false))
                 {
                     block = await Bitswap.BlockService.GetAsync(cid, cancel).ConfigureAwait(false);
                 }

@@ -20,6 +20,7 @@ using System.Collections.Concurrent;
 using System.Security;
 using PeerTalk.SecureCommunication;
 using PeerTalk.Cryptography;
+using Ipfs.Core;
 
 namespace Ipfs.Engine
 {
@@ -99,6 +100,7 @@ namespace Ipfs.Engine
         private void Init()
         {
             // Init the core api inteface.
+            StoreFactory = new FileStoreFactory();
             Bitswap = new BitswapApi(this);
             Block = new BlockApi(this);
             BlockRepository = new BlockRepositoryApi(this);
@@ -185,7 +187,8 @@ namespace Ipfs.Engine
                 log.Debug("Building DHT service");
                 var dht = new PeerTalk.Routing.Dht1
                 {
-                    Swarm = await SwarmService.ConfigureAwait(false)
+                    Swarm = await SwarmService.ConfigureAwait(false),
+                    StoreFactory = StoreFactory
                 };
                 dht.Swarm.Router = dht;
                 log.Debug("Built DHT service");
@@ -226,6 +229,8 @@ namespace Ipfs.Engine
         ///   Manages the version of the repository.
         /// </summary>
         public MigrationManager MigrationManager { get; set; }
+
+        public IStoreFactory StoreFactory { get; set; }
 
         /// <inheritdoc />
         public IBitswapApi Bitswap { get; set; }
