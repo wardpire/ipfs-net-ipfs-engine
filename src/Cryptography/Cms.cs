@@ -47,7 +47,7 @@ namespace Ipfs.Engine.Cryptography
 
             // TODO: Need a method to just get the BC public key
             // Get the BC key pair for the named key.
-            var ekey = await Store.TryGetAsync(keyName, cancel).ConfigureAwait(false);
+            var ekey = await _store.TryGetAsync(keyName, cancel).ConfigureAwait(false);
             if (ekey == null)
             {
                 throw new KeyNotFoundException($"The key '{keyName}' does not exist.");

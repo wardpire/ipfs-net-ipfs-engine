@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Ipfs.CoreApi;
 using Ipfs.Engine.LinkedData;
+using Ipfs.Registry;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Org.BouncyCastle.Asn1.Ocsp;
@@ -80,7 +81,7 @@ namespace Ipfs.Engine.CoreApi
         public async Task<Cid> PutAsync(
             JObject data,
             string contentType = "dag-cbor",
-            string multiHash = MultiHash.DefaultAlgorithmName,
+            AlgorithmNames multiHash = MultiHash.DefaultAlgorithmName,
             string encoding = MultiBase.DefaultAlgorithmName,
             bool pin = true,
             CancellationToken cancel = default)
@@ -98,7 +99,7 @@ namespace Ipfs.Engine.CoreApi
 
         public async Task<Cid> PutAsync(Stream data,
             string contentType = "dag-cbor",
-            string multiHash = MultiHash.DefaultAlgorithmName,
+            AlgorithmNames multiHash = MultiHash.DefaultAlgorithmName,
             string encoding = MultiBase.DefaultAlgorithmName,
             bool pin = true,
             CancellationToken cancel = default)
@@ -110,7 +111,7 @@ namespace Ipfs.Engine.CoreApi
 
         public async Task<Cid> PutAsync(object data,
             string contentType = "dag-cbor",
-            string multiHash = MultiHash.DefaultAlgorithmName,
+            AlgorithmNames multiHash = MultiHash.DefaultAlgorithmName,
             string encoding = MultiBase.DefaultAlgorithmName,
             bool pin = true,
             CancellationToken cancel = default)

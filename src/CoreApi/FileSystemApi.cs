@@ -9,6 +9,7 @@ using Common.Logging;
 using ICSharpCode.SharpZipLib.Tar;
 using Ipfs.CoreApi;
 using Ipfs.Engine.UnixFileSystem;
+using Ipfs.Registry;
 using ProtoBuf;
 
 namespace Ipfs.Engine.CoreApi
@@ -366,7 +367,7 @@ namespace Ipfs.Engine.CoreApi
             public Task<Cid> PutAsync(
                 byte[] data,
                 string contentType = Cid.DefaultContentType,
-                string multiHash = MultiHash.DefaultAlgorithmName,
+                AlgorithmNames multiHash = MultiHash.DefaultAlgorithmName,
                 string encoding = MultiBase.DefaultAlgorithmName,
                 bool pin = false,
                 CancellationToken cancel = default)
@@ -376,7 +377,7 @@ namespace Ipfs.Engine.CoreApi
                     ContentType = contentType,
                     Encoding = encoding,
                     Hash = MultiHash.ComputeHash(data, multiHash),
-                    Version = (contentType == "dag-pb" && multiHash == "sha2-256") ? 0 : 1
+                    Version = (contentType == "dag-pb" && multiHash == AlgorithmNames.sha2_256) ? 0 : 1
                 };
                 return Task.FromResult(cid);
             }
@@ -384,7 +385,7 @@ namespace Ipfs.Engine.CoreApi
             public Task<Cid> PutAsync(
                 Stream data,
                 string contentType = Cid.DefaultContentType,
-                string multiHash = MultiHash.DefaultAlgorithmName,
+                AlgorithmNames multiHash = MultiHash.DefaultAlgorithmName,
                 string encoding = MultiBase.DefaultAlgorithmName,
                 bool pin = false,
                 CancellationToken cancel = default)

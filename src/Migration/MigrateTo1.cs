@@ -30,9 +30,8 @@ namespace Ipfs.Engine.Migration
                 return;
             }
 
-            var store = new FileStore<Cid, Pin1>
+            var store = new FileStore<Cid, Pin1>(ipfs.Options,"pins",FileStore<Cid, Pin1>.InitSerialize.Json)
             {
-                Folder = path,
                 KeyToFileName = (cid) => cid.Hash.ToBase32(),
                 FileNameToKey = (key) => new MultiHash(key.FromBase32())
             };
@@ -45,7 +44,7 @@ namespace Ipfs.Engine.Migration
                 {
                     var name = store.FileNameToKey(fi.Name);
                     var pin = await store.GetAsync(name, cancel).ConfigureAwait(false);
-                    File.Create(Path.Combine(store.Folder, pin.Id));
+                    File.Create(Path.Combine(path, pin.Id));
                     File.Delete(store.GetPath(name));
                 }
                 catch
@@ -63,9 +62,8 @@ namespace Ipfs.Engine.Migration
                 return;
             }
 
-            var store = new FileStore<Cid, Pin1>
+            var store = new FileStore<Cid, Pin1>(ipfs.Options,"pins",FileStore<Cid, Pin1>.InitSerialize.Json)
             {
-                Folder = path,
                 KeyToFileName = (cid) => cid.Hash.ToBase32(),
                 FileNameToKey = (key) => new MultiHash(key.FromBase32())
             };

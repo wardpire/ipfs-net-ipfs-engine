@@ -29,12 +29,8 @@ namespace Ipfs.Engine.CoreApi
             {
                 if (store == null)
                 {
-                    var folder = Path.Combine(ipfs.Options.Repository.Folder, "pins");
-                    if (!Directory.Exists(folder))
-                        Directory.CreateDirectory(folder);
-                    store = new FileStore<Cid, Pin>
+                    store = new FileStore<Cid, Pin>(ipfs.Options, "pins", FileStore<Cid, Pin>.InitSerialize.Json)
                     {
-                        Folder = folder,
                         KeyToFileName = (cid) => cid.Hash.ToBase32(),
                         FileNameToKey = (key) => new MultiHash(key.FromBase32())
                     };

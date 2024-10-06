@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,16 +17,17 @@ namespace Ipfs.Engine.CoreApi
             this.ipfs = ipfs;
         }
 
-        public async Task<Peer> FindPeerAsync(MultiHash id, CancellationToken cancel = default)
+        public async Task<Peer?> FindPeerAsync(MultiHash id, CancellationToken cancel = default)
         {
             var dht = await ipfs.DhtService.ConfigureAwait(false);
             return await dht.FindPeerAsync(id, cancel).ConfigureAwait(false);
         }
 
-        public async Task<IEnumerable<Peer>> FindProvidersAsync(Cid id, int limit = 21, Action<Peer> providerFound = null, CancellationToken cancel = default)
+        public async IAsyncEnumerable<Peer> FindProvidersAsync(Cid id, int limit = 21, [EnumeratorCancellation]CancellationToken cancel = default)
         {
             var dht = await ipfs.DhtService.ConfigureAwait(false);
-            return await dht.FindProvidersAsync(id, limit, providerFound, cancel).ConfigureAwait(false);
+            await foreach (var provider in dht.FindProvidersAsync(id, limit, cancel).ConfigureAwait(false).WithCancellation(cancel))
+                yield return provider;
         }
 
         public async Task ProvideAsync(Cid cid, bool advertise = true, CancellationToken cancel = default)
@@ -34,19 +36,22 @@ namespace Ipfs.Engine.CoreApi
             await dht.ProvideAsync(cid, advertise, cancel).ConfigureAwait(false);
         }
 
-        public Task<byte[]> GetAsync(byte[] key, CancellationToken cancel = default)
+        public async Task<IEnumerable<byte[]>> FindSimilarValuesAsync(string @namespace, MultiHash key, CancellationToken cancel = default)
         {
-            throw new NotImplementedException();
+            var dht = await ipfs.DhtService.ConfigureAwait(false);
+            return await dht.FindSimilarValuesAsync(@namespace, key, cancel);
         }
 
-        public Task<bool> TryGetAsync(byte[] key, out byte[] value, CancellationToken cancel = default)
+        public async Task<byte[]?> TryGetValueAsync(string @namespace, MultiHash key, CancellationToken cancel = default)
         {
-            throw new NotImplementedException();
+            var dht = await ipfs.DhtService.ConfigureAwait(false);
+            return await dht.TryGetValueAsync(@namespace, key, cancel);
         }
 
-        public Task PutAsync(byte[] key, out byte[] value, CancellationToken cancel = default)
+        public async Task PutValueAsync(string @namespace, MultiHash key, byte[] value, CancellationToken cancel = default)
         {
-            throw new NotImplementedException();
+            var dht = await ipfs.DhtService.ConfigureAwait(false);
+            await dht.PutValueAsync(@namespace, key, value, cancel);
         }
     }
 }

@@ -9,6 +9,7 @@ using Common.Logging;
 using System.Linq;
 using System.Runtime.Serialization;
 using Ipfs.Core;
+using Ipfs.Registry;
 
 namespace Ipfs.Engine.CoreApi
 {
@@ -60,15 +61,12 @@ namespace Ipfs.Engine.CoreApi
             {
                 if (store == null)
                 {
-                    var folder = Path.Combine(ipfs.Options.Repository.Folder, "blocks");
-                    if (!Directory.Exists(folder))
-                        Directory.CreateDirectory(folder);
-                    store = ipfs.StoreFactory.CreateStore<Cid, DataBlock>(
-                        folder,
-                        nameToKey: (cid) => cid.Hash.ToBase32(),
-                        keyToName: (key) => new MultiHash(key.FromBase32()),
-                        serialize: async (stream, _, block, cancel) => await stream.WriteAsync(block.DataBytes.AsMemory(0, block.DataBytes.Length), cancel).ConfigureAwait(false),
-                        deserialize: async (stream, cid, cancel) =>
+                    store = new FileStore<Cid, DataBlock>(ipfs.Options, "blocks")
+                    {
+                        KeyToFileName = (cid) => cid.Hash.ToBase32(),
+                        FileNameToKey = (key) => new MultiHash(key.FromBase32()),
+                        Serialize = async (stream, _, block, cancel) => await stream.WriteAsync(block.DataBytes.AsMemory(0, block.DataBytes.Length), cancel).ConfigureAwait(false),
+                        Deserialize = async (stream, cid, cancel) =>
                         {
                             var block = new DataBlock
                             {
@@ -82,7 +80,7 @@ namespace Ipfs.Engine.CoreApi
                             }
                             return block;
                         }
-                        );
+                    };
                 }
                 return store;
             }
@@ -121,10 +119,14 @@ namespace Ipfs.Engine.CoreApi
             using var queryCancel = CancellationTokenSource.CreateLinkedTokenSource(cancel);
             var bitswapGet = ipfs.Bitswap.GetAsync(id, queryCancel.Token).ConfigureAwait(false);
             var dht = await ipfs.DhtService;
-            var _ = dht.FindProvidersAsync(
+            var providers = dht.FindProvidersAsync(
                 id: id,
-                action: (peer) => ProviderFoundAsync(peer, queryCancel.Token).ConfigureAwait(false),
                 cancel: queryCancel.Token);
+
+            await foreach (var provider in providers.WithCancellation(queryCancel.Token))
+            {
+                await ProviderFoundAsync(provider, queryCancel.Token).ConfigureAwait(false);
+            }
 
             IDataBlock got = await bitswapGet;
             log.Debug("bitswap got the block");
@@ -153,7 +155,7 @@ namespace Ipfs.Engine.CoreApi
         public async Task<Cid> PutAsync(
             byte[] data,
             string contentType = Cid.DefaultContentType,
-            string multiHash = MultiHash.DefaultAlgorithmName,
+            AlgorithmNames multiHash = MultiHash.DefaultAlgorithmName,
             string encoding = MultiBase.DefaultAlgorithmName,
             bool pin = false,
             CancellationToken cancel = default)
@@ -169,7 +171,7 @@ namespace Ipfs.Engine.CoreApi
                 return new Cid
                 {
                     ContentType = contentType,
-                    Hash = MultiHash.ComputeHash(data, "identity")
+                    Hash = MultiHash.ComputeHash(data, AlgorithmNames.identity)
                 };
             }
 
@@ -223,7 +225,7 @@ namespace Ipfs.Engine.CoreApi
         public async Task<Cid> PutAsync(
             Stream data,
             string contentType = Cid.DefaultContentType,
-            string multiHash = MultiHash.DefaultAlgorithmName,
+            AlgorithmNames multiHash = MultiHash.DefaultAlgorithmName,
             string encoding = MultiBase.DefaultAlgorithmName,
             bool pin = false,
             CancellationToken cancel = default)

@@ -1,5 +1,6 @@
 ﻿using Common.Logging;
 using Ipfs.CoreApi;
+using Ipfs.Registry;
 using PeerTalk;
 using PeerTalk.Protocols;
 using System;
@@ -365,7 +366,7 @@ namespace Ipfs.Engine.BlockExchange
         ///   via the <see cref="BlockService"/>.
         ///   </para>
         /// </remarks>
-        public async Task OnBlockReceivedAsync(Peer remote, byte[] block, string contentType, string multiHash)
+        public async Task OnBlockReceivedAsync(Peer remote, byte[] block, string contentType, AlgorithmNames multiHash)
         {
             // Update statistics.
             ++BlocksReceived;

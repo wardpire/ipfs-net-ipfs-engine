@@ -1,6 +1,7 @@
 ﻿using Common.Logging;
 using Ipfs.Core;
 using Ipfs.Engine.Cryptography.Proto;
+using Ipfs.Registry;
 using Org.BouncyCastle.Asn1.Pkcs;
 using Org.BouncyCastle.Asn1.Sec;
 using Org.BouncyCastle.Asn1.X9;
@@ -34,57 +35,41 @@ namespace Ipfs.Engine.Cryptography
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(KeyChain));
 
-        private readonly string fileRepositoryBasePath;
+        private readonly KeyChainOptions _keyChainOptions;
         private char[] dek;
-        private IStore<string, EncryptedKey> store;
+        private IStore<string, EncryptedKey> _store;
         private static byte[] hashedBytes;
 
         /// <summary>
         ///   Create a new instance of the <see cref="KeyChain"/> class.
         /// </summary>
-        public KeyChain(string fileRepositoryBasePath)
+        public KeyChain(IpfsEngineOptions ipfsOptions)
         {
-            this.fileRepositoryBasePath = fileRepositoryBasePath;
+            _keyChainOptions = ipfsOptions.KeyChain ?? new KeyChainOptions();
+            _store = new FileStore<string, EncryptedKey>(ipfsOptions.Repository.Folder, "keys", FileStore<string, EncryptedKey>.InitSerialize.Json)
+            {
+                KeyToFileName = (key) => Encoding.UTF8.GetBytes(key).ToBase32(),
+                FileNameToKey = (fileName) => Encoding.UTF8.GetString(Base32.Decode(fileName))
+            };
         }
 
         /// <summary>
         ///   Create a new instance of the <see cref="KeyChain"/> class.
         /// </summary>
-        public KeyChain(IStore<string,EncryptedKey> keyStore)
+        public KeyChain(IStore<string, EncryptedKey> keyStore, IpfsEngineOptions ipfsOptions)
         {
-            this.store = keyStore;
-        }
-
-        private IStore<string, EncryptedKey> Store
-        {
-            get
-            {
-                if (store != null)
-                {
-                    return store;
-                }
-
-                var folder = Path.Combine(fileRepositoryBasePath, "keys");
-                if (!Directory.Exists(folder))
-                {
-                    Directory.CreateDirectory(folder);
-                }
-
-                store = new FileStore<string, EncryptedKey>
-                {
-                    Folder = folder,
-                    KeyToFileName = (key) => Encoding.UTF8.GetBytes(key).ToBase32(),
-                    FileNameToKey = (fileName) => Encoding.UTF8.GetString(Base32.Decode(fileName))
-                };
-
-                return store;
-            }
+            _store = keyStore;
+            _keyChainOptions = ipfsOptions.KeyChain ?? new KeyChainOptions();
         }
 
         /// <summary>
-        ///   The configuration options.
+        ///   Create a new instance of the <see cref="KeyChain"/> class.
         /// </summary>
-        public KeyChainOptions Options { get; set; } = new KeyChainOptions();
+        public KeyChain(IStore<string, EncryptedKey> keyStore, KeyChainOptions? keyChainOptions = default)
+        {
+            _store = keyStore;
+            _keyChainOptions = keyChainOptions ?? new KeyChainOptions();
+        }
 
         /// <summary>
         ///   Sets the passphrase for the key chain.
@@ -115,14 +100,14 @@ namespace Ipfs.Engine.Cryptography
                 var pdb = new Pkcs5S2ParametersGenerator(new Sha256Digest());
                 pdb.Init(
                     plain,
-                    Encoding.UTF8.GetBytes(Options.Dek.Salt),
-                    Options.Dek.IterationCount);
-                var key = (KeyParameter)pdb.GenerateDerivedMacParameters(Options.Dek.KeyLength * 8);
+                    Encoding.UTF8.GetBytes(_keyChainOptions.Dek.Salt),
+                    _keyChainOptions.Dek.IterationCount);
+                var key = (KeyParameter)pdb.GenerateDerivedMacParameters(_keyChainOptions.Dek.KeyLength * 8);
                 dek = key.GetKey().ToBase64NoPad().ToCharArray();
             });
 
             // Verify that that pass phrase is okay, by reading a key.
-            var akey = await Store.TryGetAsync("self", cancel).ConfigureAwait(false);
+            var akey = await _store.TryGetAsync("self", cancel).ConfigureAwait(false);
             if (akey != null)
             {
                 try
@@ -153,7 +138,7 @@ namespace Ipfs.Engine.Cryptography
         /// </returns>
         public async Task<IKey> FindKeyByNameAsync(string name, CancellationToken cancel = default)
         {
-            var key = await Store.TryGetAsync(name, cancel).ConfigureAwait(false);
+            var key = await _store.TryGetAsync(name, cancel).ConfigureAwait(false);
             if (key == null)
                 return null;
             return new KeyInfo { Id = key.Id, Name = key.Name };
@@ -181,7 +166,7 @@ namespace Ipfs.Engine.Cryptography
         {
             //
             string result = null;
-            var ekey = await Store.TryGetAsync(name, cancel).ConfigureAwait(false);
+            var ekey = await _store.TryGetAsync(name, cancel).ConfigureAwait(false);
             if (ekey != null)
             {
                 UseEncryptedKey(ekey, key =>
@@ -241,9 +226,9 @@ namespace Ipfs.Engine.Cryptography
         {
             // Apply defaults.
             if (string.IsNullOrWhiteSpace(keyType))
-                keyType = Options.DefaultKeyType;
+                keyType = _keyChainOptions.DefaultKeyType;
             if (size < 1)
-                size = Options.DefaultKeySize;
+                size = _keyChainOptions.DefaultKeySize;
             keyType = keyType.ToLowerInvariant();
 
             // Create the key pair.
@@ -280,7 +265,7 @@ namespace Ipfs.Engine.Cryptography
         public async Task<string> ExportAsync(string name, char[] password, CancellationToken cancel = default)
         {
             string pem = "";
-            var key = await Store.GetAsync(name, cancel).ConfigureAwait(false);
+            var key = await _store.GetAsync(name, cancel).ConfigureAwait(false);
             UseEncryptedKey(key, pkey =>
             {
                 using (var sw = new StringWriter())
@@ -325,7 +310,7 @@ namespace Ipfs.Engine.Cryptography
         /// <inheritdoc />
         public Task<IEnumerable<IKey>> ListAsync(CancellationToken cancel = default)
         {
-            var keys = Store
+            var keys = _store
                 .Values
                 .Select(key => (IKey)new KeyInfo { Id = key.Id, Name = key.Name });
             return Task.FromResult(keys);
@@ -334,23 +319,23 @@ namespace Ipfs.Engine.Cryptography
         /// <inheritdoc />
         public async Task<IKey> RemoveAsync(string name, CancellationToken cancel = default)
         {
-            var key = await Store.TryGetAsync(name, cancel).ConfigureAwait(false);
+            var key = await _store.TryGetAsync(name, cancel).ConfigureAwait(false);
             if (key == null)
                 return null;
 
-            await Store.RemoveAsync(name, cancel).ConfigureAwait(false);
+            await _store.RemoveAsync(name, cancel).ConfigureAwait(false);
             return new KeyInfo { Id = key.Id, Name = key.Name };
         }
 
         /// <inheritdoc />
         public async Task<IKey> RenameAsync(string oldName, string newName, CancellationToken cancel = default)
         {
-            var key = await Store.TryGetAsync(oldName, cancel).ConfigureAwait(false);
+            var key = await _store.TryGetAsync(oldName, cancel).ConfigureAwait(false);
             if (key == null)
                 return null;
             key.Name = newName;
-            await Store.PutAsync(newName, key, cancel).ConfigureAwait(false);
-            await Store.RemoveAsync(oldName, cancel).ConfigureAwait(false);
+            await _store.PutAsync(newName, key, cancel).ConfigureAwait(false);
+            await _store.RemoveAsync(oldName, cancel).ConfigureAwait(false);
 
             return new KeyInfo { Id = key.Id, Name = newName };
         }
@@ -370,7 +355,7 @@ namespace Ipfs.Engine.Cryptography
         /// </returns>
         public async Task<AsymmetricKeyParameter> GetPrivateKeyAsync(string name, CancellationToken cancel = default)
         {
-            var key = await Store.TryGetAsync(name, cancel).ConfigureAwait(false);
+            var key = await _store.TryGetAsync(name, cancel).ConfigureAwait(false);
             if (key == null)
             {
                 throw new KeyNotFoundException($"The key '{name}' does not exist.");
@@ -416,7 +401,7 @@ namespace Ipfs.Engine.Cryptography
                 Name = name,
                 Pem = pem
             };
-            await Store.PutAsync(name, key).ConfigureAwait(false);
+            await _store.PutAsync(name, key).ConfigureAwait(false);
             log.DebugFormat("Added key '{0}' with ID {1}", name, keyId);
 
             return new KeyInfo { Id = key.Id, Name = key.Name };
@@ -460,7 +445,7 @@ namespace Ipfs.Engine.Cryptography
                 // the serialized bytes. The idea here is that if the serialized byte array
                 // is short enough, we can fit it in a multihash verbatim without having to
                 // condense it using a hash function.
-                var alg = (ms.Length <= 48) ? "identity" : "sha2-256";
+                var alg = (ms.Length <= 48) ? AlgorithmNames.identity : AlgorithmNames.sha2_256;
 
                 ms.Position = 0;
                 return MultiHash.ComputeHash(ms, alg);
