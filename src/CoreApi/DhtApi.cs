@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
+using Google.Protobuf.WellKnownTypes;
 using Ipfs.CoreApi;
 
 namespace Ipfs.Engine.CoreApi
@@ -42,16 +44,28 @@ namespace Ipfs.Engine.CoreApi
             return await dht.FindSimilarValuesAsync(@namespace, key, cancel);
         }
 
+        public async Task<string?> TryGetValueStringAsync(string @namespace, MultiHash key, CancellationToken cancel = default)
+        {
+            var dht = await ipfs.DhtService.ConfigureAwait(false);
+            return await dht.TryGetValueStringAsync(@namespace, key, cancel);
+        }
+
         public async Task<byte[]?> TryGetValueAsync(string @namespace, MultiHash key, CancellationToken cancel = default)
         {
             var dht = await ipfs.DhtService.ConfigureAwait(false);
             return await dht.TryGetValueAsync(@namespace, key, cancel);
         }
 
-        public async Task PutValueAsync(string @namespace, MultiHash key, byte[] value, CancellationToken cancel = default)
+        public async Task PutValueAsync(string @namespace, MultiHash key, string UTF8Value, CancellationToken cancellationToken = default)
         {
             var dht = await ipfs.DhtService.ConfigureAwait(false);
-            await dht.PutValueAsync(@namespace, key, value, cancel);
+            await dht.PutValueAsync(@namespace, key, UTF8Value, cancellationToken);
+        }
+
+        public async Task PutValueAsync(string @namespace, MultiHash key, byte[] value, CancellationToken cancellationToken = default)
+        {
+            var dht = await ipfs.DhtService.ConfigureAwait(false);
+            await dht.PutValueAsync(@namespace, key, value, cancellationToken);
         }
     }
 }
